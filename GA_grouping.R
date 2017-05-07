@@ -6,6 +6,9 @@ library(DEoptim)
 library(genalg)
 library(GA)
 
+library(parallel)
+library(doParallel)
+
 population = matrix(nrow = 100, ncol = 10)
 # population = apply(population, 1, function(x){runif(100,-100,100)})
  # population = apply(population, 1, function(x){runif(1,-100,100)})
@@ -64,5 +67,5 @@ DE.results = DEoptim(partial(cec2013, i=7), rep(-100, 10), rep(100, 10), DEoptim
 # plot(DEres, plot.type = "bestvalit")
 DE.pop = DE.results$member$storepop
 GA.results = ga(type = "real-valued", fitness = partial(cec2013, i=7), min = rep(-100, 10), max = rep(100, 10),
-           maxiter = 200, popSize=100, parallel = TRUE, monitor = partial(gaSavePopulation, name="GA.pop"))
-# plot(GA.results)
+           maxiter = 500, popSize=100, parallel = TRUE, monitor = partial(gaSavePopulation, name="GA.pop"))
+plot(GA.results)
