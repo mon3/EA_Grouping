@@ -95,3 +95,27 @@ plot(GA.results)
 
 # distance matrix
 # d <- dist(mydata, method = "euclidean") # distance matrix
+
+RBGA.data = do.call(rbind.data.frame, RBGA.pop)
+RBGA.lastpop = tail(RBGA.data, 100)
+
+# determine number of clusters
+wss <- (nrow(RBGA.lastpop)-1)*sum(apply(RBGA.lastpop,2,var))
+for (i in 2:15) wss[i] <- sum(kmeans(RBGA.lastpop, 
+   centers=i)$withinss)
+plot(1:15, wss, type="b", xlab="Number of Clusters",
+   ylab="Within groups sum of squares")
+
+
+# K-Means Cluster Analysis
+ fit <- kmeans(RBGA.lastpop, 9) # 9 cluster solution
+# get cluster means 
+aggregate(RBGA.lastpop, by=list(fit$cluster), FUN =mean)
+# append cluster assignment
+RBGA.lastpop <- data.frame(RBGA.lastpop, fit$cluster)
+
+# ANOTHER POSSIBILITY for k-means
+# nstart = number of initial points
+#RBGA.Cluster <- kmeans(RBGA.lastpop, 7, nstart =20)
+
+
