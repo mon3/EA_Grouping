@@ -48,6 +48,29 @@ rbgaSavePopulation <- function(obj, name){
   env[[name]] = append(env[[name]], list(obj$population))
 }
 
+# revrites set of populations from genetic algorithms to data frame
+populationToData <- function(obj){
+	return(do.call(rbind.data.frame, obj))
+}
+
+wss <- (nrow(RBGA.lastpop)-1)*sum(apply(RBGA.lastpop,2,var))
+for (i in 2:15) wss[i] <- sum(kmeans(RBGA.lastpop, 
+   centers=i)$withinss)
+plot(1:15, wss, type="b", xlab="Number of Clusters",
+   ylab="Within groups sum of squares")
+
+
+
+
+determineNumberOfClusters <- function(obj){
+	wss <- (nrow(obj)-1)*sum(apply(obj,2,var))
+	for (i in 2:15) wss[i] <- sum(kmeans(obj, 
+   		centers=i)$withinss)
+	plot(1:15, wss, type="b", xlab="Number of Clusters",
+   		ylab="Within groups sum of squares")
+}
+
+
 # goal function evaluation using library 2005 (nr > 5)
 cec2005benchmark6(population)
 
@@ -71,9 +94,15 @@ RBGA.pop = list()
 # genalg RBGA optimization of evaluation function: cec2005benchmark6
 # suggestions == initial population: currently does not work while passing population matrix
 
-RBGA.results = rbga(stringMin = rep(-100,10), stringMax = rep(100,10), suggestions=NULL, popSize=100, iters = 100, 
+
+# zmieniałam maxiter, żeby sprawdzić, jak się nasyca funkcja celu i jednocześnie, ile grup powstanie
+# maxiter = 100, #grup = 14
+# maxiter = 500, #grup = 3 (tak naprawdę 1)
+# maxiter = 300, #grup = 6/7 
+
+RBGA.results = rbga(stringMin = rep(-100,10), stringMax = rep(100,10), suggestions=NULL, popSize=100, iters = 300, 
                     mutationChance=NA, elitism=NA, monitorFunc=partial(rbgaSavePopulation, name="RBGA.pop"),
-                    evalFunc = partial(cec2013, i=as.numeric(args[2])))
+                    evalFunc = partial(cec2013, i=7))
 
 # RBGA.results = rbga(stringMin = rep(-100,10), stringMax = rep(100,10), suggestions=NULL, popSize=100, iters = 100, 
 #                     mutationChance=NA, elitism=NA, monitorFunc=partial(rbgaSavePopulation), name="RBGA.pop", evalFunc = partial(cec2013, i=7)) # i to make a parameter
@@ -88,31 +117,49 @@ registerDoSEQ()
 DE.results = DEoptim(partial(cec2013, i=as.numeric(args[2])), rep(-100, 10), rep(100, 10), DEoptim.control(storepopfrom = 0, trace=FALSE, parallelType=2))
 # plot(DEres, plot.type = "bestvalit")
 DE.pop = DE.results$member$storepop # wycinamy member storepop
-GA.results = ga(type = "real-valued", fitness = partial(cec2013, i=as.numeric(args[2])), min = rep(-100, 10), max = rep(100, 10),
-           maxiter = 500, popSize=100, parallel = TRUE, monitor = partial(gaSavePopulation, name="GA.pop"))
+
+GA.results = ga(type = "real-valued", fitness = partial(cec2013, i=7), min = rep(-100, 10), max = rep(100, 10),
+           maxiter = 1000, popSize=100, parallel = TRUE, monitor = partial(gaSavePopulation, name="GA.pop"))
 plot(GA.results)
 
 
 # distance matrix
 # d <- dist(mydata, method = "euclidean") # distance matrix
 
-RBGA.data = do.call(rbind.data.frame, RBGA.pop)
+
+RBGA.data = populationToData(RBGA.pop)
 RBGA.lastpop = tail(RBGA.data, 100)
 
-# determine number of clusters
-wss <- (nrow(RBGA.lastpop)-1)*sum(apply(RBGA.lastpop,2,var))
-for (i in 2:15) wss[i] <- sum(kmeans(RBGA.lastpop, 
-   centers=i)$withinss)
-plot(1:15, wss, type="b", xlab="Number of Clusters",
-   ylab="Within groups sum of squares")
+GA.data = populationToData(GA.pop)
+GA.lastpop = tail(GA.data, 100)
 
+# determine number of clusters for RBGA last population
+determineNumberOfClusters(RBGA.lastpop)
+
+# determine number of clusters for GA last population
+# z wykresów wynika, że dla GA nawet przy większej liczbie iteracji, 
+# np. maxiter = 1000, dalej potrzebujemy większej liczby grup niż w przypadku RBGA
+determineNumberOfClusters(GA.lastpop)
 
 # K-Means Cluster Analysis
- fit <- kmeans(RBGA.lastpop, 9) # 9 cluster solution
+ fit <- kmeans(RBGA.lastpop, 6) # 6 cluster solution
 # get cluster means 
 aggregate(RBGA.lastpop, by=list(fit$cluster), FUN =mean)
 # append cluster assignment
 RBGA.lastpop <- data.frame(RBGA.lastpop, fit$cluster)
+
+# sprawdzenie wynikow grupowania: plot(fit$cluster)
+
+
+# creation of clusters from k-means for GA
+ fit <- kmeans(GA.lastpop, 8) # 8 cluster solution
+# get cluster means 
+aggregate(RBGA.lastpop, by=list(fit$cluster), FUN =mean)
+# append cluster assignment
+RBGA.lastpop <- data.frame(RBGA.lastpop, fit$cluster)
+
+
+
 
 # ANOTHER POSSIBILITY for k-means
 # nstart = number of initial points
