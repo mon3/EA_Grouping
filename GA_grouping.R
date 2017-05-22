@@ -53,15 +53,14 @@ populationToData <- function(obj){
 	return(do.call(rbind.data.frame, obj))
 }
 
-wss <- (nrow(RBGA.lastpop)-1)*sum(apply(RBGA.lastpop,2,var))
-for (i in 2:15) wss[i] <- sum(kmeans(RBGA.lastpop, 
-   centers=i)$withinss)
-plot(1:15, wss, type="b", xlab="Number of Clusters",
-   ylab="Within groups sum of squares")
+# wss <- (nrow(RBGA.lastpop)-1)*sum(apply(RBGA.lastpop,2,var))
+# for (i in 2:15) wss[i] <- sum(kmeans(RBGA.lastpop, 
+#    centers=i)$withinss)
+# plot(1:15, wss, type="b", xlab="Number of Clusters",
+#    ylab="Within groups sum of squares")
 
 
-
-
+# determination of optimal number of clusters
 determineNumberOfClusters <- function(obj){
 	wss <- (nrow(obj)-1)*sum(apply(obj,2,var))
 	for (i in 2:15) wss[i] <- sum(kmeans(obj, 
@@ -69,6 +68,25 @@ determineNumberOfClusters <- function(obj){
 	plot(1:15, wss, type="b", xlab="Number of Clusters",
    		ylab="Within groups sum of squares")
 }
+
+
+# K-means clusters analysis
+kMeansClustering <- function(obj, numberOfClusters){
+	determineNumberOfClusters(obj)
+	# k-means cluster analysis
+	fit <- kmeans(obj, numberOfClusters)
+	# get cluster means 
+	aggregate(obj, by=list(fit$cluster), FUN=mean)
+	# append cluster assignment
+	obj <- data.frame(obj, fit$cluster)
+}
+
+
+# np. maxiter = 1000, dalej potrzebujemy większej liczby grup niż w przypadku RBGA
+
+
+
+
 
 
 # goal function evaluation using library 2005 (nr > 5)
@@ -102,7 +120,7 @@ RBGA.pop = list()
 
 RBGA.results = rbga(stringMin = rep(-100,10), stringMax = rep(100,10), suggestions=NULL, popSize=100, iters = 300, 
                     mutationChance=NA, elitism=NA, monitorFunc=partial(rbgaSavePopulation, name="RBGA.pop"),
-                    evalFunc = partial(cec2013, i=7))
+                    evalFunc = partial(cec2013, i=9))
 
 # RBGA.results = rbga(stringMin = rep(-100,10), stringMax = rep(100,10), suggestions=NULL, popSize=100, iters = 100, 
 #                     mutationChance=NA, elitism=NA, monitorFunc=partial(rbgaSavePopulation), name="RBGA.pop", evalFunc = partial(cec2013, i=7)) # i to make a parameter
@@ -142,7 +160,7 @@ determineNumberOfClusters(RBGA.lastpop)
 determineNumberOfClusters(GA.lastpop)
 
 # K-Means Cluster Analysis
- fit <- kmeans(RBGA.lastpop, 6) # 6 cluster solution
+ fit <- kmeans(RBGA.lastpop, 14) # 6 cluster solution
 # get cluster means 
 aggregate(RBGA.lastpop, by=list(fit$cluster), FUN =mean)
 # append cluster assignment
@@ -154,15 +172,65 @@ RBGA.lastpop <- data.frame(RBGA.lastpop, fit$cluster)
 # creation of clusters from k-means for GA
  fit <- kmeans(GA.lastpop, 8) # 8 cluster solution
 # get cluster means 
-aggregate(RBGA.lastpop, by=list(fit$cluster), FUN =mean)
+aggregate(GA.lastpop, by=list(fit$cluster), FUN =mean)
 # append cluster assignment
-RBGA.lastpop <- data.frame(RBGA.lastpop, fit$cluster)
+GA.lastpop <- data.frame(GA.lastpop, fit$cluster)
 
+
+
+# determineNumberOfClusters(GA.lastpop)
+
+# # K-Means Cluster Analysis
+#  fit <- kmeans(RBGA.lastpop, 6) # 6 cluster solution
+# # get cluster means 
+# aggregate(RBGA.lastpop, by=list(fit$cluster), FUN =mean)
+# # append cluster assignment
+# RBGA.lastpop <- data.frame(RBGA.lastpop, fit$cluster)
+
+# kMeansClustering(RBGA.lastpop, 6)
 
 
 
 # ANOTHER POSSIBILITY for k-means
 # nstart = number of initial points
 #RBGA.Cluster <- kmeans(RBGA.lastpop, 7, nstart =20)
+
+
+# porównanie funkcji celu dla środków każdej z grup z funkcją celu 
+# dla najlepszego osobnika z każdej z grup
+
+# grupa o indeksie 1
+RBGA.lastpop.sub3 <-subset(RBGA.lastpop, fit.cluster==3) # zrobić pętlę for
+cec2013(9, fit$centers)
+group1 = data.matrix(RBGA.lastpop.sub1[,1:10])
+group3 = data.matrix(RBGA.lastpop.sub3[,1:10])
+
+min(cec2013(9,group1)) # daje wartośc minimalną: działa dla dodatnich i ujemnych wartości
+
+goalCluster=(cec2013(9,fit$centers))
+minPopGoal =min(cec2013(9,group1))
+minPopGoal =min(cec2013(9,group3))
+
+
+# dla ujemnych liczb: porównanie funkcji celu
+res = goalCluster>=minPopGoal # muszą być wszystkie TRUE
+all(res)==TRUE # sprawdzamy, czy wszystkie są true: rozpatrywany przypadek dla ujemnych liczb!
+
+
+# podział RBGA.lastpop na podgrupy; RBGA.lastpop.subsets = lista
+RBGA.lastpop.subsets <- split(RBGA.lastpop, as.factor(RBGA.lastpop$fit.cluster))
+
+
+	
+cec2013(9,data.matrix(as.data.frame(RBGA.lastpop.subsets[1])[,1:10]))
+
+# wypisuje funckcje celu dla osobników w poszczególnych grupach ->
+# należy je porównać z wynikami dla średnich z clusters goalCluster=(cec2013(9,fit$centers)) w grupach
+for (i in 1:length(unique(RBGA.lastpop$fit.cluster)))
+{
+	print(cec2013(9, data.matrix(as.data.frame(RBGA.lastpop.subsets[i])[,1:10])))
+}
+
+
 
 
