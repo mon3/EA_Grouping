@@ -29,10 +29,10 @@ populationToData <- function(obj){
   return(do.call(rbind.data.frame, obj))
 }
 
-#Zwraca wynik standardowego hclusta z podzia³em na k klastrów
+#Zwraca wynik standardowego hclusta z podzia?em na k klastr?w
 #w zakresie minimum:maximum, gdzie k jest wybierane na podstawie
-#najwy¿szej wartoœci œredniej silhouette dla zbioru
-#metric - dowolna metryka, któr¹ przyjmuje dist
+#najwy?szej warto?ci ?redniej silhouette dla zbioru
+#metric - dowolna metryka, kt?r? przyjmuje dist
 #lub "squared" dla kwadratowej euklidesowej
 getBestHClust <- function(minimum = 2, maximum, dataset, metric){
   if(metric=="squared"){
@@ -57,8 +57,8 @@ getBestHClust <- function(minimum = 2, maximum, dataset, metric){
   return(bestGrouping)
 }
 
-#Zwraca odsetek grup, dla których wartoœæ funkcji dla œredniej jest lepsza (ni¿sza)
-#ni¿ minimalna wartoœæ funkcji dla elementów grupy
+#Zwraca odsetek grup, dla kt?rych warto?? funkcji dla ?redniej jest lepsza (ni?sza)
+#ni? minimalna warto?? funkcji dla element?w grupy
 groupIndex <- function(dataset, grouping, fun){
   subsets = c(c(0))
   groupsNr = max(grouping)
@@ -72,3 +72,55 @@ groupIndex <- function(dataset, grouping, fun){
   }
   return(betterNr/groupsNr)
 }
+
+# do wyznaczania optymalej liczby klastrÃ³w dla k-means, maxClusters - maksymalna dopuszczalna liczba klastrÃ³w
+# obecnie: nie jest uÅ¼ywana
+determineNumberOfClusters <- function(dataset, maxClusters){
+  wss <- (nrow(dataset)-1)*sum(apply(dataset,2,var))
+  for (i in 2:maxClusters) wss[i] <- sum(kmeans(dataset,centers=i)$withinss)
+  plot(1:maxClusters, wss, type="b", xlab="Number of Clusters",
+       ylab="Within groups sum of squares")
+}
+
+# tylko dla metryki Euklidesowej!
+# wyznaczenie optymalnej liczby klastrÃ³w dla grupowania k-Å›rednich
+# na podstawie wspÃ³Å‚czynnika Silhouette
+kMeansClustering <- function(dataset, minimum=2, maximum){
+  
+  distance <- dist(dataset, method = "euclidean")
+  bestGrouping = as.data.frame(rep(1, 100))
+  bestWidth = -1.0
+  
+  for(i in minimum:maximum){
+    fit <- kmeans(dataset, i)
+    currentGrouping <- fit$cluster
+    currentSil <- silhouette(currentGrouping, distance)
+    currentWidth <- summary(currentSil)$avg.width
+    if(currentWidth>bestWidth){
+      bestGrouping <- currentGrouping
+      bestWidth <- currentWidth
+    }
+  }
+  aggregate(dataset, by = list(bestGrouping), FUN = mean)
+  dataset <- data.frame(dataset, bestGrouping)
+  return(bestGrouping)
+}
+
+
+# dla populacji 100 osobnikÃ³w, wybieramy co 1/10 iteracji alg. ewolucyjnego
+populationToClusterAnalysis <- function(data){
+  popToClust = matrix(0, nrow = 1000, ncol = 10)
+  popToClust <- data.frame(popToClust)
+  
+  for (i in 1:10){
+    ind1low = i*100-99
+    ind1high=i*100
+    ind2low = i*0.1*nrow(data)-99
+    ind2high = i* 0.1 * nrow(data)
+    popToClust[ind1low:ind1high,] = data[ind2low:ind2high,]
+  }
+  # zwraca zbiÃ³r populacji z poszczegÃ³lnych krokÃ³w AE, dla ktÃ³rej bÄ™dzie przeprowadzona analiza grupowania
+  return(popToClust)
+}
+
+
