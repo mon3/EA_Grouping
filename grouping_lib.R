@@ -215,9 +215,12 @@ for(funNr in 7:11){
   maxBest = max(GA.bestCounter, DE.bestCounter, RBGA.bestCounter)
   
   if(maxBest==GA.bestCounter){
+    print("GA")
   }
   else if(maxBest==DE.bestCounter){
+    print("DE")
   }
   if(maxBest==RBGA.bestCounter){
+    print("RBGA")
   }
 }
