@@ -123,4 +123,20 @@ populationToClusterAnalysis <- function(data){
   return(popToClust)
 }
 
+# TODO: find optimal number of groups wih Silhouette
+# finds optimal eps parameter for the dataset depending on the allowed % of noise points
+dbscanAnalyse <- function(dataset, minPts, dim=100){
+  part = 0.5;
+  i = 1.0
+  while (part > 0.2)
+  {
+    print("here")
+    ds <- dbscan(dataset, eps = i, minPts = 11)
+    i = i+1.0
+    part = sum(ds$cluster==0)/100
+  }
+  print (ds$eps)
+  return (ds)
+}
+
 
