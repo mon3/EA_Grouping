@@ -123,7 +123,23 @@ populationToClusterAnalysis <- function(data){
   return(popToClust)
 }
 
-<<<<<<< HEAD
+
+# TODO: find optimal number of groups wih Silhouette
+# finds optimal eps parameter for the dataset depending on the allowed % of noise points
+dbscanAnalyse <- function(dataset, minPts, dim=100){
+  part = 0.5;
+  i = 1.0
+  while (part > 0.2)
+  {
+    print("here")
+    ds <- dbscan(dataset, eps = i, minPts = 11)
+    i = i+1.0
+    part = sum(ds$cluster==0)/100
+  }
+  print (ds$eps)
+  return (ds)
+}
+
 for(funNr in 7:11){
   ga(type = "real-valued", fitness = partial(cec2013, i=funNr), min = rep(-100, 10), max = rep(100, 10),
      maxiter = 1000, popSize=100, parallel = TRUE, monitor = partial(gaSavePopulation, name="GA.pop"))
@@ -166,25 +182,6 @@ for(funNr in 7:11){
     DE.Hsil <- silhouette(DE.Hgroup, DE.dist)
     RBGA.Ksil <- silhouette(RBGA.Kgroup, RBGA.dist)
     RBGA.Hsil <- silhouette(RBGA.Hgroup, RBGA.dist)
-=======
-# TODO: find optimal number of groups wih Silhouette
-# finds optimal eps parameter for the dataset depending on the allowed % of noise points
-dbscanAnalyse <- function(dataset, minPts, dim=100){
-  part = 0.5;
-  i = 1.0
-  while (part > 0.2)
-  {
-    print("here")
-    ds <- dbscan(dataset, eps = i, minPts = 11)
-    i = i+1.0
-    part = sum(ds$cluster==0)/100
-  }
-  print (ds$eps)
-  return (ds)
-}
-
->>>>>>> origin/master
-
     maxKdunn = max(GA.Kdunn, DE.Kdunn, RBGA.Kdunn)
     maxHdunn = max(GA.Hdunn, DE.Hdunn, RBGA.Hdunn)
     maxKsil = max(GA.Ksil, DE.Ksil, RBGA.Ksil)
