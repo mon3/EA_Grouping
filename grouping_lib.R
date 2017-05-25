@@ -32,9 +32,17 @@ populationToData <- function(obj){
 #Zwraca wynik standardowego hclusta z podzia³em na k klastrów
 #w zakresie minimum:maximum, gdzie k jest wybierane na podstawie
 #najwy¿szej wartoœci œredniej silhouette dla zbioru
-getBestHClust <- function(minimum = 2, maximum, dataset){
-  distance = dist(dataset, method = "euclidean")
-  fit = hclust(distance)
+#metric - dowolna metryka, któr¹ przyjmuje dist
+#lub "squared" dla kwadratowej euklidesowej
+getBestHClust <- function(minimum = 2, maximum, dataset, metric){
+  if(metric=="squared"){
+    distance <- dist(dataset, method = "euclidean")
+    distance <- distance^2
+  }
+  else
+    distance <- dist(dataset, method = metric)
+  
+  fit = agnes(distance)
   bestGrouping = as.data.frame(rep(1, 100))
   bestWidth = -1.0
   for(i in minimum:maximum){
@@ -49,7 +57,7 @@ getBestHClust <- function(minimum = 2, maximum, dataset){
   return(bestGrouping)
 }
 
-#Zwraca odsetek grup, dla których wartoœæ funkcji dla œredniej jest lepsza
+#Zwraca odsetek grup, dla których wartoœæ funkcji dla œredniej jest lepsza (ni¿sza)
 #ni¿ minimalna wartoœæ funkcji dla elementów grupy
 groupIndex <- function(dataset, grouping, fun){
   subsets = c(c(0))
