@@ -140,6 +140,10 @@ dbscanAnalyse <- function(dataset, minPts, dim=100){
   return (ds)
 }
 
+GA.pop = c()
+DE.pop = c()
+RBGA.pop = c()
+
 for(funNr in 7:11){
   ga(type = "real-valued", fitness = partial(cec2013, i=funNr), min = rep(-100, 10), max = rep(100, 10),
      maxiter = 1000, popSize=100, parallel = TRUE, monitor = partial(gaSavePopulation, name="GA.pop"))
@@ -158,30 +162,32 @@ for(funNr in 7:11){
   RBGA.bestCounter <- 0
   
   for(i in 0:9){
-    GA.current <- GA.cldata[c(i*100+1:i*100+100),]
-    DE.current <- DE.cldata[c(i*100+1:i*100+100),]
-    RBGA.current <- RBGA.cldata[c(i*100+1:i*100+100),]
+    start = i*100+1
+    end = i*100+100
+    GA.current <- GA.cldata[c(start:end),]
+    DE.current <- DE.cldata[c(start:end),]
+    RBGA.current <- RBGA.cldata[c(start:end),]
     GA.dist <- dist(GA.current)
     DE.dist <- dist(DE.current)
     RBGA.dist <- dist(RBGA.current)
-    GA.Hgroup <- getBestHClust(2, 15, currentGA, "euclidean")
-    GA.Kgroup <- kMeansClustering(currentGA, 2, 15)
-    DE.Hgroup <- getBestHClust(2, 15, currentDE, "euclidean")
-    DE.Kgroup <- kMeansClustering(currentDE, 2, 15)
-    RBGA.Hgroup <- getBestHClust(2, 15, currentRBGA, "euclidean")
-    RBGA.Kgroup <- kMeansClustering(currentRBGA, 2, 15)
+    GA.Hgroup <- getBestHClust(2, 15, GA.current, "euclidean")
+    GA.Kgroup <- kMeansClustering(GA.current, 2, 15)
+    DE.Hgroup <- getBestHClust(2, 15, DE.current, "euclidean")
+    DE.Kgroup <- kMeansClustering(DE.current, 2, 15)
+    RBGA.Hgroup <- getBestHClust(2, 15, RBGA.current, "euclidean")
+    RBGA.Kgroup <- kMeansClustering(RBGA.current, 2, 15)
     GA.Kdunn <- dunn(GA.dist, GA.Hgroup)
     GA.Hdunn <- dunn(GA.dist, GA.Kgroup)
     DE.Kdunn <- dunn(DE.dist, DE.Hgroup)
     DE.Hdunn <- dunn(DE.dist, DE.Kgroup)
     RBGA.Kdunn <- dunn(RBGA.dist, RBGA.Hgroup)
     RBGA.Hdunn <- dunn(RBGA.dist, RBGA.Kgroup)
-    GA.Ksil <- silhouette(GA.Kgroup, GA.dist)
-    GA.Hsil <- silhouette(GA.Hgroup, GA.dist)
-    DE.Ksil <- silhouette(DE.Kgroup, DE.dist)
-    DE.Hsil <- silhouette(DE.Hgroup, DE.dist)
-    RBGA.Ksil <- silhouette(RBGA.Kgroup, RBGA.dist)
-    RBGA.Hsil <- silhouette(RBGA.Hgroup, RBGA.dist)
+    GA.Ksil <- summary(silhouette(GA.Kgroup, GA.dist))$avg.width
+    GA.Hsil <- summary(silhouette(GA.Hgroup, GA.dist))$avg.width
+    DE.Ksil <- summary(silhouette(DE.Kgroup, DE.dist))$avg.width
+    DE.Hsil <- summary(silhouette(DE.Hgroup, DE.dist))$avg.width
+    RBGA.Ksil <- summary(silhouette(RBGA.Kgroup, RBGA.dist))$avg.width
+    RBGA.Hsil <- summary(silhouette(RBGA.Hgroup, RBGA.dist))$avg.width
     maxKdunn = max(GA.Kdunn, DE.Kdunn, RBGA.Kdunn)
     maxHdunn = max(GA.Hdunn, DE.Hdunn, RBGA.Hdunn)
     maxKsil = max(GA.Ksil, DE.Ksil, RBGA.Ksil)
@@ -189,41 +195,33 @@ for(funNr in 7:11){
     
     if(maxKdunn==GA.Kdunn){
       GA.bestCounter <- GA.bestCounter + 1
-    }
-    else if(maxKdunn==DE.Kdunn){
+    } else if(maxKdunn==DE.Kdunn){
       DE.bestCounter <- DE.bestCounter + 1
-    }
-    if(maxKdunn==RBGA.Kdunn){
+    } else if(maxKdunn==RBGA.Kdunn){
       RBGA.bestCounter <- RBGA.bestCounter + 1
     }
     
     if(maxHdunn==GA.Hdunn){
       GA.bestCounter <- GA.bestCounter + 1
-    }
-    else if(maxHdunn==DE.Hdunn){
+    } else if(maxHdunn==DE.Hdunn){
       DE.bestCounter <- DE.bestCounter + 1
-    }
-    if(maxHdunn==RBGA.Hdunn){
+    }  else if(maxHdunn==RBGA.Hdunn){
       RBGA.bestCounter <- RBGA.bestCounter + 1
     }
     
     if(maxKsil==GA.Ksil){
       GA.bestCounter <- GA.bestCounter + 1
-    }
-    else if(maxKsil==DE.Ksil){
+    } else if(maxKsil==DE.Ksil){
       DE.bestCounter <- DE.bestCounter + 1
-    }
-    if(maxKsil==RBGA.Ksil){
+    } else if(maxKsil==RBGA.Ksil){
       RBGA.bestCounter <- RBGA.bestCounter + 1
     }
     
     if(maxHsil==GA.Hsil){
       GA.bestCounter <- GA.bestCounter + 1
-    }
-    else if(maxHsil==DE.Hsil){
+    } else if(maxHsil==DE.Hsil){
       DE.bestCounter <- DE.bestCounter + 1
-    }
-    if(maxHsil==RBGA.Hsil){
+    } else if(maxHsil==RBGA.Hsil){
       RBGA.bestCounter <- RBGA.bestCounter + 1
     }
   }
@@ -232,11 +230,9 @@ for(funNr in 7:11){
   
   if(maxBest==GA.bestCounter){
     print("GA")
-  }
-  else if(maxBest==DE.bestCounter){
+  } else if(maxBest==DE.bestCounter){
     print("DE")
-  }
-  if(maxBest==RBGA.bestCounter){
+  } else if(maxBest==RBGA.bestCounter){
     print("RBGA")
   }
 }
