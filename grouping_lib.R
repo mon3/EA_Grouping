@@ -108,6 +108,30 @@ kMeansClustering <- function(dataset, minimum=2, maximum){
   return(bestGrouping)
 }
 
+pamClustering <- function(dataset, minimum=2, maximum){
+  
+  distance <- dist(dataset, method = "euclidean")
+  bestGrouping = as.data.frame(rep(1, 100))
+  bestWidth = -1.0
+  
+  for(i in minimum:maximum){
+    fit <- pam(dataset, i, diss = inherits(dataset, "dist"), metric = "euclidean")
+    currentGrouping <- fit$clustering
+    currentSil <- fit$silinfo
+    currentWidth <- fit$silinfo$avg.width
+    if(currentWidth>bestWidth){
+      bestGrouping <- currentGrouping
+      bestWidth <- currentWidth
+    }
+  }
+  aggregate(dataset, by = list(bestGrouping), FUN = mean)
+  dataset <- data.frame(dataset, bestGrouping)
+  return(bestGrouping)
+}
+
+
+
+
 
 # dla populacji 100 osobnikow, wybieramy co 1/10 iteracji alg. ewolucyjnego
 populationToClusterAnalysis <- function(data){
@@ -173,40 +197,57 @@ for(funNr in 7:11){
     GA.dist <- dist(GA.current)
     DE.dist <- dist(DE.current)
     RBGA.dist <- dist(RBGA.current)
+    
     GA.Hgroup <- getBestHClust(2, 15, GA.current, "euclidean")
     # jako ze mamy wektory cech 10-wym, to z wykresów za dużo nie wynika
     # plot(GA.current, GA.Hgroup)
     GA.Kgroup <- kMeansClustering(GA.current, 2, 15)
+    GA.Pgroup <- pamClustering(GA.current, 2, 15)
     GA.Dgroup <- dbscanAnalyse(GA.current, 11, 100)
+    
     DE.Hgroup <- getBestHClust(2, 15, DE.current, "euclidean")
     DE.Kgroup <- kMeansClustering(DE.current, 2, 15)
+    DE.Pgroup <- pamClustering(DE.current, 2, 15)
     DE.Dgroup <- dbscanAnalyse(DE.current, 11, 100)
+    
     RBGA.Hgroup <- getBestHClust(2, 15, RBGA.current, "euclidean")
     RBGA.Kgroup <- kMeansClustering(RBGA.current, 2, 15)
+    RBGA.Pgroup <- pamClustering(RBGA.current, 2, 15)
     RBGA.Dgroup <- dbscanAnalyse(RBGA.current, 11, 100)
+    
+    
+    
     GA.Kdunn <- dunn(GA.dist, GA.Hgroup)
+    GA.Pdunn <- dunn(GA.dist, GA.Pgroup)
     GA.Hdunn <- dunn(GA.dist, GA.Kgroup)
   #  GA.Ddunn <- dunn(GA.dist, GA.Dgroup)
     DE.Kdunn <- dunn(DE.dist, DE.Hgroup)
+    DE.Pdunn <- dunn(DE.dist, DE.Pgroup)
     DE.Hdunn <- dunn(DE.dist, DE.Kgroup)
    # DE.Ddunn <- dunn(DE.dist, DE.Dgroup)
     RBGA.Kdunn <- dunn(RBGA.dist, RBGA.Hgroup)
+    RBGA.Pdunn <- dunn(RBGA.dist, RBGA.Pgroup)
     RBGA.Hdunn <- dunn(RBGA.dist, RBGA.Kgroup)
   #  RBGA.Ddunn <- dunn(RBGA.dist, RBGA.Dgroup)
     GA.Ksil <- summary(silhouette(GA.Kgroup, GA.dist))$avg.width
+    GA.Psil <- summary(silhouette(GA.Pgroup, GA.dist))$avg.width # mozna by wyciagac silhouette z samego pam, ale nalezaloby przerobic wiecej rzeczy przed tym krokiem
     GA.Hsil <- summary(silhouette(GA.Hgroup, GA.dist))$avg.width
-    GA.Dsil <- summary(silhouette(GA.Dgroup, GA.dist))$avg.width
+  #  GA.Dsil <- summary(silhouette(GA.Dgroup, GA.dist))$avg.width
     DE.Ksil <- summary(silhouette(DE.Kgroup, DE.dist))$avg.width
+    DE.Psil <- summary(silhouette(DE.Pgroup, DE.dist))$avg.width
     DE.Hsil <- summary(silhouette(DE.Hgroup, DE.dist))$avg.width
-    DE.Dsil <- summary(silhouette(DE.Dgroup, DE.dist))$avg.width
+   # DE.Dsil <- summary(silhouette(DE.Dgroup, DE.dist))$avg.width
     RBGA.Ksil <- summary(silhouette(RBGA.Kgroup, RBGA.dist))$avg.width
+    RBGA.Psil <- summary(silhouette(RBGA.Pgroup, RBGA.dist))$avg.width
     RBGA.Hsil <- summary(silhouette(RBGA.Hgroup, RBGA.dist))$avg.width
    # RBGA.Dsil <- summary(silhouette(RBGA.Dgroup, RBGA.dist))$avg.width
     maxKdunn = max(GA.Kdunn, DE.Kdunn, RBGA.Kdunn)
     maxHdunn = max(GA.Hdunn, DE.Hdunn, RBGA.Hdunn)
+    maxPdunn = max(GA.Pdunn, DE.Pdunn, RBGA.Pdunn)
    # maxDdunn = max(GA.Ddunn, DE.Ddunn, RBGA.Ddunn)
     maxKsil = max(GA.Ksil, DE.Ksil, RBGA.Ksil)
     maxHsil = max(GA.Hsil, DE.Hsil, RBGA.Hsil)
+    maxPsil = max(GA.Psil, DE.Psil, RBGA.Psil)
   #  maxDsil = max(GA.Dsil, DE.Dsil, RBGA.Dsil)
     
     if(maxKdunn==GA.Kdunn){
@@ -222,6 +263,14 @@ for(funNr in 7:11){
     } else if(maxHdunn==DE.Hdunn){
       DE.bestCounter <- DE.bestCounter + 1
     }  else if(maxHdunn==RBGA.Hdunn){
+      RBGA.bestCounter <- RBGA.bestCounter + 1
+    }
+    
+    if(maxPdunn==GA.Pdunn){
+      GA.bestCounter <- GA.bestCounter + 1
+    } else if(maxPdunn==DE.Pdunn){
+      DE.bestCounter <- DE.bestCounter + 1
+    }  else if(maxPdunn==RBGA.Pdunn){
       RBGA.bestCounter <- RBGA.bestCounter + 1
     }
     
@@ -246,6 +295,14 @@ for(funNr in 7:11){
     } else if(maxHsil==DE.Hsil){
       DE.bestCounter <- DE.bestCounter + 1
     } else if(maxHsil==RBGA.Hsil){
+      RBGA.bestCounter <- RBGA.bestCounter + 1
+    }
+    
+    if(maxPsil==GA.Psil){
+      GA.bestCounter <- GA.bestCounter + 1
+    } else if(maxPsil==DE.Psil){
+      DE.bestCounter <- DE.bestCounter + 1
+    } else if(maxPsil==RBGA.Psil){
       RBGA.bestCounter <- RBGA.bestCounter + 1
     }
     
