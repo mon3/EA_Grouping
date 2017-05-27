@@ -149,8 +149,6 @@ populationToClusterAnalysis <- function(data){
   return(popToClust)
 }
 
-
-
 # finds optimal eps parameter for the dataset depending on the allowed % of noise points
 # returns vector of clusters with optimal eps parameter
 dbscanAnalyse <- function(dataset, minPts, dim=100){
@@ -167,7 +165,76 @@ dbscanAnalyse <- function(dataset, minPts, dim=100){
   return (ds$cluster)
 }
 
+gaPopulation <- function(funNr, poplSize, indivSize, iterations, crossProb, mutProb){
+  ga(type = "real-valued", fitness = partial(cec2013, i=funNr), min = rep(poplSize*-1, indivSize), max = rep(poplSize, indivSize),
+     maxiter = iterations, popSize=poplSize, pcrossover = crossProb, pmutation = mutProb, parallel = TRUE, monitor = partial(gaSavePopulation, name="GA.pop.anal"), seed=12345)
+}
+
+# algType: PAM, k-means; indexType: 1-silhouette, 2-Dunn, 3-averages; 
+kAlgorithmGroupingQuality <- function(minK=2, maxK, algType, indexType){
+  GA.anal.cldata <- populationToClusterAnalysis(populationToData(GA.pop.anal)) # populacje z poszczególnych kroków GA
+  
+  distance <- dist(GA.anal.cldata[901:1000,], method = "euclidean")
+  bestGrouping = as.data.frame(rep(1, 100))
+  bestWidth = -1.0
+  resSil <- vector()
+  resDun <- vector()
+  
+  if (algType == "PAM"){
+    for(i in minK:maxK){
+      fit <- pam(dataset, i, diss = inherits(dataset, "dist"), metric = "euclidean")
+      currentGrouping <- fit$clustering
+      currentSil <- fit$silinfo
+      currentWidth <- fit$silinfo$avg.width
+      resSil[i-1] <- fit$silinfo$avg.width
+      resDun[i-1] <- dunn(distance, currentGrouping)
+      # zapisujemy silhouette i k
+      if(currentWidth>bestWidth){
+        bestGrouping <- currentGrouping
+        bestWidth <- currentWidth
+      }
+    }
+  }
+  else if (algType == "k-means"){
+    
+    for(i in minK:maxK){
+      fit <- kmeans(dataset, i)
+      currentGrouping <- fit$cluster
+      currentSil <- silhouette(currentGrouping, distance)
+      currentWidth <- summary(currentSil)$avg.width
+      resSil[i-1] <- currentWidth
+      resDun[i-1] <- dunn(distance, currentGrouping)
+      # zapisujemy silhouette i k
+      if(currentWidth>bestWidth){
+        bestGrouping <- currentGrouping
+        bestWidth <- currentWidth
+      }
+    }
+  }
+  
+  if (indexType==1){
+    print("SILHOUETTE")
+    print (resSil)
+    print("Optimal k = ")
+    print(which(resSil==max(resSil)))
+    
+  }
+  else if (indexType==2){
+    print("DUNN")
+    print(resDun)
+    print("Optimal k = ")
+    print(which(resDun==max(resDun)))
+  }
+
+}
+
+
+
+
+
+
 GA.pop = c()
+GA.pop.anal = c()
 DE.pop = c()
 RBGA.pop = c()
 
