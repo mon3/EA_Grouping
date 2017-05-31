@@ -365,11 +365,11 @@ for(funNr in 7:9){
       RBGA.bestCounter <- RBGA.bestCounter + 1
     }
     
-    if(maxHsil==GA.Hsil){
+    if(maxHsil==GAres$Hsil){
       GA.bestCounter <- GA.bestCounter + 1
-    } else if(maxHsil==DE.Hsil){
+    } else if(maxHsil==DEres$Hsil){
       DE.bestCounter <- DE.bestCounter + 1
-    } else if(maxHsil==RBGA.Hsil){
+    } else if(maxHsil==RBGAres$Hsil){
       RBGA.bestCounter <- RBGA.bestCounter + 1
     }
     
