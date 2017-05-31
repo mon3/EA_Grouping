@@ -4,8 +4,8 @@ argsIter = 1
 # metrics
 metrics = args[argsIter]
 populationNumber = strtoi(args[argsIter<-argsIter+1])
-print(metrics)
-print(populationNumber)
+#print(metrics)
+#print(populationNumber)
 
 if (is.na(populationNumber) == TRUE){
   print("Wrong pop number provided")
@@ -23,39 +23,39 @@ if (groupingNumberGA == 3){
 }
 
 # parametry dla oceny GA: groupingNumberGA + gaGroup (wector z nazwami grup)
-print("GA")
-print(groupingNumberGA)
-print(gaGroup)
+#print("GA")
+#print(groupingNumberGA)
+#print(gaGroup)
 
 
 # metody grupowania dla RBGA
-groupingNumberRBGA = strtoi(args[argsIter<-argsIter+1])
-rbgaGroup = c()
-if (groupingNumberRBGA == 3){
-  # all 
-}else {
-  for (i in 1:groupingNumberRBGA)
-    rbgaGroup <- union(rbgaGroup, c(args[argsIter<-argsIter+1]))
-}
+# groupingNumberRBGA = strtoi(args[argsIter<-argsIter+1])
+# rbgaGroup = c()
+# if (groupingNumberRBGA == 3){
+#   # all 
+# }else {
+#   for (i in 1:groupingNumberRBGA)
+#     rbgaGroup <- union(rbgaGroup, c(args[argsIter<-argsIter+1]))
+# }
 
 # parametry dla oceny RBGA: groupingNumberRBGA + rbgaGroup (wector z nazwami grup)
-print("RBGA")
-print(groupingNumberRBGA)
-print(rbgaGroup)
+#print("RBGA")
+#print(groupingNumberRBGA)
+#print(rbgaGroup)
 # metody grupowania dla DE
-groupingNumberDE= strtoi(args[argsIter<-argsIter+1])
-deGroup = c()
-if (groupingNumberDE == 3){
-  # all 
-}else {
-  for (i in 1:groupingNumberDE)
-    deGroup <- union(deGroup, c(args[argsIter<-argsIter+1]))
-}
+# groupingNumberDE= strtoi(args[argsIter<-argsIter+1])
+# deGroup = c()
+# if (groupingNumberDE == 3){
+#   # all 
+# }else {
+#   for (i in 1:groupingNumberDE)
+#     deGroup <- union(deGroup, c(args[argsIter<-argsIter+1]))
+# }
 
 # parametry dla oceny DE: groupingNumberDE + deGroup (wector z nazwami grup)
-print("DE")
-print(groupingNumberDE)
-print(deGroup)
+#print("DE")
+#print(groupingNumberDE)
+#print(deGroup)
 # opcjonalne parametry GA na końcu
 gaArgs = c()
 gaProvided = strtoi(args[argsIter<-argsIter+1])
@@ -64,13 +64,13 @@ for (i in 1:gaProvided){
   
 }
 
-print("OPTIONAL GA ARGS: ")
-print(gaProvided)
-print(gaArgs)
+#print("OPTIONAL GA ARGS: ")
+#print(gaProvided)
+#print(gaArgs)
 
 result <- list("metrics"= metrics, "popNr"=populationNumber, 
-               "GaGroupsNr" =  groupingNumberGA, "gaGroups" = gaGroup, "RbgaGroupsNr" = groupingNumberRBGA, "rbgaGroups" = rbgaGroup,
-               "deGroupsNr" = groupingNumberDE, "deGroups" = deGroup, "optinalGA" = gaProvided, "GAparams" = gaArgs)
-
+               "GaGroupsNr" =  groupingNumberGA, "gaGroups" = gaGroup, "GAparamsNr" = gaProvided, "GAparams" = gaArgs)
+#print(result)
 return(result)
 }
+

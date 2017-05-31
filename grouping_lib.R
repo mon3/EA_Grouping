@@ -35,7 +35,7 @@ populationToData <- function(obj){
 #w zakresie minimum:maximum, gdzie k jest wybierane na podstawie
 #najwyzszej wartosci sredniej silhouette dla zbioru
 #distance - macierz odleglosci grupowanych danych
-#type - metoda grupowania spo渞骴 dopuszczalnych przez agnes
+#type - metoda grupowania spo?r?d dopuszczalnych przez agnes
 getBestHClust <- function(minimum = 2, maximum, distance, type = "average"){
   fit = agnes(distance, method = type)
   bestGrouping = as.data.frame(rep(1, 100))
@@ -83,7 +83,7 @@ determineNumberOfClusters <- function(dataset, maxClusters){
 kMeansClustering <- function(distance, minimum=2, maximum){
   bestGrouping = as.data.frame(rep(1, 100))
   bestWidth = -1.0
-  
+
   for(i in minimum:maximum){
     fit <- kmeans(distance, i, 20)
     currentGrouping <- fit$cluster
@@ -101,7 +101,7 @@ kMeansClustering <- function(distance, minimum=2, maximum){
 pamClustering <- function(distance, minimum=2, maximum){
   bestGrouping = as.data.frame(rep(1, 100))
   bestWidth = -1.0
-  
+
   for(i in minimum:maximum){
     fit <- pam(distance, i)
     currentGrouping <- fit$clustering
@@ -123,7 +123,7 @@ pamClustering <- function(distance, minimum=2, maximum){
 populationToClusterAnalysis <- function(data){
   popToClust = matrix(0, nrow = 1000, ncol = 10)
   popToClust <- data.frame(popToClust)
-  
+
   for (i in 1:10){
     ind1low = i*100-99
     ind1high=i*100
@@ -156,16 +156,50 @@ gaPopulation <- function(funNr, poplSize, indivSize, iterations, crossProb, mutP
      maxiter = iterations, popSize=poplSize, pcrossover = crossProb, pmutation = mutProb, parallel = TRUE, monitor = partial(gaSavePopulation, name="GA.pop.anal"), seed=12345)
 }
 
-# algType: PAM, k-means; indexType: 1-silhouette, 2-Dunn, 3-averages; 
+runGAGrouping <- function(GaGroupsNr, gaGroups, GA.dist, GA.Hgroup, GA.Pgroup, GA.Kgroup){
+  if (GaGroupsNr==3){
+    GAres$Kdunn <- dunn(GA.dist, GA.Hgroup)
+    GAres$Pdunn <- dunn(GA.dist, GA.Pgroup)
+    GAres$Hdunn <- dunn(GA.dist, GA.Kgroup)
+  } else if (GaGroupsNr==2){
+    if (gaGroups[1]=="hclust" || gaGroups[2]== "hclust"){
+      GAres$Hdunn <- dunn(GA.dist, GA.Kgroup)
+    }
+    if (gaGroups[1]=="pam" || gaGroups[2]== "pam"){
+      GAres$Pdunn <- dunn(GA.dist, GA.Pgroup)
+    }
+    if (gaGroups[1]=="kmeans" || gaGroups[2]== "kmeans"){
+      GAres$Kdunn <- dunn(GA.dist, GA.Hgroup)
+    }
+  } else
+  {
+    if (gaGroups[1]=="hclust" ){
+      GAres$Hdunn <- dunn(GA.dist, GA.Kgroup)
+    }
+    if (gaGroups[1]=="pam"){
+      GAres$Pdunn <- dunn(GA.dist, GA.Pgroup)
+    }
+    if (gaGroups[1]=="kmeans"){
+      GAres$Kdunn <- dunn(GA.dist, GA.Hgroup)
+    }
+  }
+  GAres$Ksil <- summary(silhouette(GA.Kgroup, GA.dist))$avg.width
+  GAres$Psil <- summary(silhouette(GA.Pgroup, GA.dist))$avg.width # mozna by wyciagac silhouette z samego pam, ale nalezaloby przerobic wiecej rzeczy przed tym krokiem
+  GAres$Hsil <- summary(silhouette(GA.Hgroup, GA.dist))$avg.width
+  return(GAres)
+}
+
+
+# algType: PAM, k-means; indexType: 1-silhouette, 2-Dunn, 3-averages;
 kAlgorithmGroupingQuality <- function(minK=2, maxK, algType, indexType){
   GA.anal.cldata <- populationToClusterAnalysis(populationToData(GA.pop.anal)) # populacje z poszczeg贸lnych krok贸w GA
-  
+
   distance <- dist(GA.anal.cldata[901:1000,], method = "euclidean")
   bestGrouping = as.data.frame(rep(1, 100))
   bestWidth = -1.0
   resSil <- vector()
   resDun <- vector()
-  
+
   if (algType == "PAM"){
     for(i in minK:maxK){
       fit <- pam(dataset, i, diss = inherits(dataset, "dist"), metric = "euclidean")
@@ -182,7 +216,7 @@ kAlgorithmGroupingQuality <- function(minK=2, maxK, algType, indexType){
     }
   }
   else if (algType == "k-means"){
-    
+
     for(i in minK:maxK){
       fit <- kmeans(dataset, i)
       currentGrouping <- fit$cluster
@@ -197,13 +231,13 @@ kAlgorithmGroupingQuality <- function(minK=2, maxK, algType, indexType){
       }
     }
   }
-  
+
   if (indexType==1){
     print("SILHOUETTE")
     print (resSil)
     print("Optimal k = ")
     print(which(resSil==max(resSil)))
-    
+
   }
   else if (indexType==2){
     print("DUNN")
@@ -214,11 +248,10 @@ kAlgorithmGroupingQuality <- function(minK=2, maxK, algType, indexType){
 
 }
 
-
 assessGroupingAlgorithm <- function(data, npops, algorithm, func, hmethod = "average", metric = "euclidean", kMin = 2, kMax = 15, tryAllK = FALSE){
   groupingResults = list()
   step = nrow(data)/npops
-  
+
   for(i in 0:(npops-1)){
     start = i*step+1
     end = i*step+100
@@ -235,7 +268,7 @@ assessGroupingAlgorithm <- function(data, npops, algorithm, func, hmethod = "ave
     }
 
     partialRes = list()
-    
+
     if(tryAllK == TRUE){
       for(k in kMin:kMax){
         kRes = list()
@@ -270,7 +303,17 @@ assessGroupingAlgorithm <- function(data, npops, algorithm, func, hmethod = "ave
   return(groupingResults)
 }
 
+source("read_params.R")
+parameters = readInputParams()
+metrics = parameters$metrics
+popNr = parameters$popNr
+GaGroupsNr = parameters$GaGroupsNr
+gaGroups = parameters$GaGroups
+# liczba opcjonalnych parametr贸w + warto艣ci
+GAparamsNr = parameters$GAparamsNr
+GAparams = parameters$GAparams
 
+#print(GAparams[2])
 
 GA.pop = c()
 GA.pop.anal = c()
@@ -281,7 +324,7 @@ results = list()
 for(funNr in 7:9){
   ga(type = "real-valued", fitness = partial(cec2013, i=funNr), min = rep(-100, 10), max = rep(100, 10),
      maxiter = 1000, popSize=100, parallel = TRUE, monitor = partial(gaSavePopulation, name="GA.pop"))
-  rbga(stringMin = rep(-100,10), stringMax = rep(100,10), suggestions=NULL, popSize=100, iters = 1000, 
+  rbga(stringMin = rep(-100,10), stringMax = rep(100,10), suggestions=NULL, popSize=100, iters = 1000,
        mutationChance=NA, elitism=NA, monitorFunc=partial(rbgaSavePopulation, name="RBGA.pop"),
        evalFunc = partial(cec2013, i=funNr))
   registerDoSEQ()
@@ -290,12 +333,12 @@ for(funNr in 7:9){
   GA.cldata <- populationToClusterAnalysis(populationToData(GA.pop))
   DE.cldata <- populationToClusterAnalysis(populationToData(DE.pop))
   RBGA.cldata <- populationToClusterAnalysis(populationToData(RBGA.pop))
-  
+
   GA.bestCounter <- 0
   DE.bestCounter <- 0
   RBGA.bestCounter <- 0
   resultList = list(GA = list(), DE = list(), RBGA = list())
-  
+
   for(i in 0:9){
     start = i*100+1
     end = i*100+100
@@ -305,32 +348,46 @@ for(funNr in 7:9){
     GA.dist <- dist(GA.current)
     DE.dist <- dist(DE.current)
     RBGA.dist <- dist(RBGA.current)
-    
+
     GAres = list()
     DEres = list()
     RBGAres = list()
-    GA.Hgroup <- getBestHClust(2, 15, GA.current, "euclidean")
+    
+    if (metrics == "euclidean" || metrics=="manhattan"){
+      GA.Hgroup <- getBestHClust(2, 15, GA.current, metrics)
+    } else {
+      # domy艣lna metryka "euclidesowa"
+      GA.Hgroup <- getBestHClust(2, 15, GA.current, "euclidean")
+    }
     # jako ze mamy wektory cech 10-wym, to z wykres贸w za du偶o nie wynika
     # plot(GA.current, GA.Hgroup)
     GA.Kgroup <- kMeansClustering(GA.current, 2, 15)
     GA.Pgroup <- pamClustering(GA.current, 2, 15)
     #GA.Dgroup <- dbscanAnalyse(GA.current, 11, 100)
     
-    DE.Hgroup <- getBestHClust(2, 15, DE.current, "euclidean")
+    
+    if (metrics == "euclidean" || metrics=="manhattan"){
+      DE.Hgroup <- getBestHClust(2, 15, DE.current, metrics)
+    } else {
+      DE.Hgroup <- getBestHClust(2, 15, DE.current, "euclidean")
+    }
     DE.Kgroup <- kMeansClustering(DE.current, 2, 15)
     DE.Pgroup <- pamClustering(DE.current, 2, 15)
     #DE.Dgroup <- dbscanAnalyse(DE.current, 11, 100)
     
-    RBGA.Hgroup <- getBestHClust(2, 15, RBGA.current, "euclidean")
+    if (metrics == "euclidean" || metrics=="manhattan"){
+      RBGA.Hgroup <- getBestHClust(2, 15, RBGA.current, metrics)
+    } else {
+      RBGA.Hgroup <- getBestHClust(2, 15, RBGA.current, "euclidean")
+    }
     RBGA.Kgroup <- kMeansClustering(RBGA.current, 2, 15)
     RBGA.Pgroup <- pamClustering(RBGA.current, 2, 15)
     #RBGA.Dgroup <- dbscanAnalyse(RBGA.current, 11, 100)
-    
-    
-    
+
     GAres$Kdunn <- dunn(GA.dist, GA.Hgroup)
     GAres$Pdunn <- dunn(GA.dist, GA.Pgroup)
     GAres$Hdunn <- dunn(GA.dist, GA.Kgroup)
+    
   #  GAres$Ddunn <- dunn(GA.dist, GA.Dgroup)
     DEres$Kdunn <- dunn(DE.dist, DE.Hgroup)
     DEres$Pdunn <- dunn(DE.dist, DE.Pgroup)
@@ -363,7 +420,7 @@ for(funNr in 7:9){
     resultList$GA[[i+1]] = GAres
     resultList$DE[[i+1]] = DEres
     resultList$RBGA[[i+1]] = RBGAres
-    
+
     if(maxKdunn==GAres$Kdunn){
       GA.bestCounter <- GA.bestCounter + 1
     } else if(maxKdunn==DEres$Kdunn){
@@ -371,7 +428,7 @@ for(funNr in 7:9){
     } else if(maxKdunn==RBGAres$Kdunn){
       RBGA.bestCounter <- RBGA.bestCounter + 1
     }
-    
+
     if(maxHdunn==GAres$Hdunn){
       GA.bestCounter <- GA.bestCounter + 1
     } else if(maxHdunn==DEres$Hdunn){
@@ -379,7 +436,7 @@ for(funNr in 7:9){
     }  else if(maxHdunn==RBGAres$Hdunn){
       RBGA.bestCounter <- RBGA.bestCounter + 1
     }
-    
+
     if(maxPdunn==GAres$Pdunn){
       GA.bestCounter <- GA.bestCounter + 1
     } else if(maxPdunn==DEres$Pdunn){
@@ -387,7 +444,7 @@ for(funNr in 7:9){
     }  else if(maxPdunn==RBGAres$Pdunn){
       RBGA.bestCounter <- RBGA.bestCounter + 1
     }
-    
+
     # if(maxDdunn==GA.Ddunn){
     #   GA.bestCounter <- GA.bestCounter + 1
     # } else if(maxDdunn==DE.Ddunn){
@@ -395,7 +452,7 @@ for(funNr in 7:9){
     # }  else if(maxDdunn==RBGA.Ddunn){
     #   RBGA.bestCounter <- RBGA.bestCounter + 1
     # }
-    # 
+    #
     if(maxKsil==GAres$Ksil){
       GA.bestCounter <- GA.bestCounter + 1
     } else if(maxKsil==DEres$Ksil){
@@ -403,7 +460,7 @@ for(funNr in 7:9){
     } else if(maxKsil==RBGAres$Ksil){
       RBGA.bestCounter <- RBGA.bestCounter + 1
     }
-    
+
     if(maxHsil==GAres$Hsil){
       GA.bestCounter <- GA.bestCounter + 1
     } else if(maxHsil==DEres$Hsil){
@@ -411,7 +468,7 @@ for(funNr in 7:9){
     } else if(maxHsil==RBGAres$Hsil){
       RBGA.bestCounter <- RBGA.bestCounter + 1
     }
-    
+
     if(maxPsil==GAres$Psil){
       GA.bestCounter <- GA.bestCounter + 1
     } else if(maxPsil==DEres$Psil){
@@ -419,7 +476,7 @@ for(funNr in 7:9){
     } else if(maxPsil==RBGAres$Psil){
       RBGA.bestCounter <- RBGA.bestCounter + 1
     }
-    
+
     # if(maxDsil==GA.Dsil){
     #   GA.bestCounter <- GA.bestCounter + 1
     # } else if(maxDsil==DE.Dsil){
@@ -427,11 +484,11 @@ for(funNr in 7:9){
     # } else if(maxDsil==RBGA.Dsil){
     #   RBGA.bestCounter <- RBGA.bestCounter + 1
     # }
-    # 
+    #
   }
-  
+
   maxBest = max(GA.bestCounter, DE.bestCounter, RBGA.bestCounter)
-  
+
   if(maxBest==GA.bestCounter){
     print("GA")
   } else if(maxBest==DE.bestCounter){
