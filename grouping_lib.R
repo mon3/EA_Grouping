@@ -34,17 +34,10 @@ populationToData <- function(obj){
 #Zwraca wynik standardowego hclusta z podzialem na k klastrow
 #w zakresie minimum:maximum, gdzie k jest wybierane na podstawie
 #najwyzszej wartosci sredniej silhouette dla zbioru
-#metric - dowolna metryka, ktora przyjmuje dist
-#lub "squared" dla kwadratowej euklidesowej
-getBestHClust <- function(minimum = 2, maximum, dataset, metric){
-  if(metric=="squared"){
-    distance <- dist(dataset, method = "euclidean")
-    distance <- distance^2
-  }
-  else
-    distance <- dist(dataset, method = metric)
-  
-  fit = agnes(distance)
+#distance - macierz odleglosci grupowanych danych
+#type - metoda grupowania spoœród dopuszczalnych przez agnes
+getBestHClust <- function(minimum = 2, maximum, distance, type = "average"){
+  fit = agnes(distance, method = type)
   bestGrouping = as.data.frame(rep(1, 100))
   bestWidth = -1.0
   for(i in minimum:maximum){
@@ -87,14 +80,12 @@ determineNumberOfClusters <- function(dataset, maxClusters){
 # tylko dla metryki Euklidesowej!
 # wyznaczenie optymalnej liczby klastrow dla grupowania k-srednich
 # na podstawie wspolczynnika Silhouette
-kMeansClustering <- function(dataset, minimum=2, maximum){
-  
-  distance <- dist(dataset, method = "euclidean")
+kMeansClustering <- function(distance, minimum=2, maximum){
   bestGrouping = as.data.frame(rep(1, 100))
   bestWidth = -1.0
   
   for(i in minimum:maximum){
-    fit <- kmeans(dataset, i)
+    fit <- kmeans(distance, i, 20)
     currentGrouping <- fit$cluster
     currentSil <- silhouette(currentGrouping, distance)
     currentWidth <- summary(currentSil)$avg.width
@@ -103,19 +94,16 @@ kMeansClustering <- function(dataset, minimum=2, maximum){
       bestWidth <- currentWidth
     }
   }
-  aggregate(dataset, by = list(bestGrouping), FUN = mean)
-  dataset <- data.frame(dataset, bestGrouping)
   return(bestGrouping)
 }
 
-pamClustering <- function(dataset, minimum=2, maximum){
-  
-  distance <- dist(dataset, method = "euclidean")
+#tylko dla metryki euklidesowej lub Manhattan!
+pamClustering <- function(distance, minimum=2, maximum){
   bestGrouping = as.data.frame(rep(1, 100))
   bestWidth = -1.0
   
   for(i in minimum:maximum){
-    fit <- pam(dataset, i, diss = inherits(dataset, "dist"), metric = "euclidean")
+    fit <- pam(distance, i)
     currentGrouping <- fit$clustering
     currentSil <- fit$silinfo
     currentWidth <- fit$silinfo$avg.width
@@ -124,8 +112,6 @@ pamClustering <- function(dataset, minimum=2, maximum){
       bestWidth <- currentWidth
     }
   }
-  aggregate(dataset, by = list(bestGrouping), FUN = mean)
-  dataset <- data.frame(dataset, bestGrouping)
   return(bestGrouping)
 }
 
@@ -229,7 +215,60 @@ kAlgorithmGroupingQuality <- function(minK=2, maxK, algType, indexType){
 }
 
 
+assessGroupingAlgorithm <- function(data, npops, algorithm, func, hmethod = "average", metric = "euclidean", kMin = 2, kMax = 15, tryAllK = FALSE){
+  groupingResults = list()
+  step = nrow(data)/npops
+  
+  for(i in 0:(npops-1)){
+    start = i*step+1
+    end = i*step+100
+    pop.current <- data[c(start:end),]
+    if(algorithm == "hclust" && !is.null(metric)){
+      if(metric == "squared"){
+          pop.dist <- dist(pop.current, method = "euclidean")
+          pop.dist <- pop.dist^2
+      } else{
+        pop.dist <- dist(pop.current, method = metric)
+      }
+    } else{
+      pop.dist <- dist(pop.current)
+    }
 
+    partialRes = list()
+    
+    if(tryAllK == TRUE){
+      for(k in kMin:kMax){
+        kRes = list()
+        if(algorithm == "hclust"){
+          kRes$grouping = getBestHClust(k, k, pop.dist, hmethod)
+        } else if(algorithm == "kclust"){
+          kRes$grouping = kMeansClustering(pop.dist, k, k)
+        } else if(algorithm == "pam"){
+          kRes$grouping = pamClustering(pop.dist, k, k)
+        }
+        kRes$dunn = dunn(pop.dist, kRes$grouping)
+        kRes$sil = summary(silhouette(kRes$grouping, pop.dist))$avg.width
+        kRes$gind = groupIndex(pop.current, kRes$grouping, func)
+        partialRes[[k]] = kRes
+      }
+    } else{
+      kRes = list()
+      if(algorithm == "hclust"){
+        kRes$grouping = getBestHClust(kMin, kMax, pop.dist, hmethod)
+      } else if(algorithm == "kclust"){
+        kRes$grouping = kMeansClustering(pop.dist, kMin, kMax)
+      } else if(algorithm == "pam"){
+        kRes$grouping = pamClustering(pop.dist, kMin, kMax)
+      }
+      kRes$dunn = dunn(pop.dist, kRes$grouping)
+      kRes$sil = summary(silhouette(kRes$grouping, pop.dist))$avg.width
+      kRes$gind = groupIndex(pop.current, kRes$grouping, func)
+      partialRes[[max(kRes$grouping)]] = kRes
+    }
+    groupingResults[[i+1]] = partialRes
+  }
+  return(groupingResults)
+}
 
 
 
@@ -401,4 +440,17 @@ for(funNr in 7:9){
     print("RBGA")
   }
   results[[funNr]] = resultList
+}
+
+sums = c()
+for(i in 1:3){
+  partial = c()
+  for(j in 7:9){
+    sum = c()
+    for(k in 1:6){
+        sum[k] = Reduce("+",resjson[[i]][[j]][[k]])
+    }
+    partial[[j]] = sum
+  }
+  sums[[i]] = partial
 }
