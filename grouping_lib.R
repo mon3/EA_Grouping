@@ -374,7 +374,7 @@ for(funNr in 7:9){
     
     if (metrics == "euclidean" || metrics=="manhattan"){
       GA.Hgroup <- getBestHClust(2, 15, GA.current, metrics)
-    } else {
+    }else {
       # domyślna metryka "euclidesowa"
       GA.Hgroup <- getBestHClust(2, 15, GA.current, "euclidean")
     }
@@ -387,7 +387,7 @@ for(funNr in 7:9){
     
     if (metrics == "euclidean" || metrics=="manhattan"){
       DE.Hgroup <- getBestHClust(2, 15, DE.current, metrics)
-    } else {
+    }else {
       DE.Hgroup <- getBestHClust(2, 15, DE.current, "euclidean")
     }
     DE.Kgroup <- kMeansClustering(DE.current, 2, 15)
@@ -396,7 +396,7 @@ for(funNr in 7:9){
     
     if (metrics == "euclidean" || metrics=="manhattan"){
       RBGA.Hgroup <- getBestHClust(2, 15, RBGA.current, metrics)
-    } else {
+    }else {
       RBGA.Hgroup <- getBestHClust(2, 15, RBGA.current, "euclidean")
     }
     RBGA.Kgroup <- kMeansClustering(RBGA.current, 2, 15)
@@ -415,7 +415,8 @@ for(funNr in 7:9){
     RBGAres$Kdunn <- dunn(RBGA.dist, RBGA.Hgroup)
     RBGAres$Pdunn <- dunn(RBGA.dist, RBGA.Pgroup)
     RBGAres$Hdunn <- dunn(RBGA.dist, RBGA.Kgroup)
-  #  RBGAres$Ddunn <- dunn(RBGA.dist, RBGA.Dgroup)
+    if(maxHdunn==Gares$Hdunn){
+      GA.bestCounter <- GA.bestCounter + 1
     } else if(maxHdunn==DEres$Hdunn){
       DE.bestCounter <- DE.bestCounter + 1
     }  else if(maxHdunn==RBGAres$Hdunn){
