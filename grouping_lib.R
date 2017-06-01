@@ -120,15 +120,16 @@ pamClustering <- function(distance, minimum=2, maximum){
 
 
 # dla populacji 100 osobnikow, wybieramy co 1/10 iteracji alg. ewolucyjnego
-populationToClusterAnalysis <- function(data){
-  popToClust = matrix(0, nrow = 1000, ncol = 10)
+populationToClusterAnalysis <- function(data, popNr){
+  popToClust = matrix(0, nrow = popNr*100, ncol = 10)
   popToClust <- data.frame(popToClust)
-
-  for (i in 1:10){
+  coeff = 1/popNr
+  
+  for (i in 1:popNr){
     ind1low = i*100-99
     ind1high=i*100
-    ind2low = i*0.1*nrow(data)-99
-    ind2high = i* 0.1 * nrow(data)
+    ind2low = i*coeff*nrow(data)-99
+    ind2high = i* coeff * nrow(data)
     popToClust[ind1low:ind1high,] = data[ind2low:ind2high,]
   }
   # zwraca zbior populacji z poszczegolnych krokow AE, dla ktorej bedzie przeprowadzona analiza grupowania
@@ -156,43 +157,10 @@ gaPopulation <- function(funNr, poplSize, indivSize, iterations, crossProb, mutP
      maxiter = iterations, popSize=poplSize, pcrossover = crossProb, pmutation = mutProb, parallel = TRUE, monitor = partial(gaSavePopulation, name="GA.pop.anal"), seed=12345)
 }
 
-runGAGrouping <- function(GaGroupsNr, gaGroups, GA.dist, GA.Hgroup, GA.Pgroup, GA.Kgroup){
-  if (GaGroupsNr==3){
-    GAres$Kdunn <- dunn(GA.dist, GA.Hgroup)
-    GAres$Pdunn <- dunn(GA.dist, GA.Pgroup)
-    GAres$Hdunn <- dunn(GA.dist, GA.Kgroup)
-  } else if (GaGroupsNr==2){
-    if (gaGroups[1]=="hclust" || gaGroups[2]== "hclust"){
-      GAres$Hdunn <- dunn(GA.dist, GA.Kgroup)
-    }
-    if (gaGroups[1]=="pam" || gaGroups[2]== "pam"){
-      GAres$Pdunn <- dunn(GA.dist, GA.Pgroup)
-    }
-    if (gaGroups[1]=="kmeans" || gaGroups[2]== "kmeans"){
-      GAres$Kdunn <- dunn(GA.dist, GA.Hgroup)
-    }
-  } else
-  {
-    if (gaGroups[1]=="hclust" ){
-      GAres$Hdunn <- dunn(GA.dist, GA.Kgroup)
-    }
-    if (gaGroups[1]=="pam"){
-      GAres$Pdunn <- dunn(GA.dist, GA.Pgroup)
-    }
-    if (gaGroups[1]=="kmeans"){
-      GAres$Kdunn <- dunn(GA.dist, GA.Hgroup)
-    }
-  }
-  GAres$Ksil <- summary(silhouette(GA.Kgroup, GA.dist))$avg.width
-  GAres$Psil <- summary(silhouette(GA.Pgroup, GA.dist))$avg.width # mozna by wyciagac silhouette z samego pam, ale nalezaloby przerobic wiecej rzeczy przed tym krokiem
-  GAres$Hsil <- summary(silhouette(GA.Hgroup, GA.dist))$avg.width
-  return(GAres)
-}
-
 
 # algType: PAM, k-means; indexType: 1-silhouette, 2-Dunn, 3-averages;
 kAlgorithmGroupingQuality <- function(minK=2, maxK, algType, indexType){
-  GA.anal.cldata <- populationToClusterAnalysis(populationToData(GA.pop.anal)) # populacje z poszczególnych kroków GA
+  GA.anal.cldata <- populationToClusterAnalysis(populationToData(GA.pop.anal), 10) # populacje z poszczególnych kroków GA
 
   distance <- dist(GA.anal.cldata[901:1000,], method = "euclidean")
   bestGrouping = as.data.frame(rep(1, 100))
@@ -303,6 +271,51 @@ assessGroupingAlgorithm <- function(data, npops, algorithm, func, hmethod = "ave
   return(groupingResults)
 }
 
+# returns list of results for different grouping algorithms
+runGAGrouping <- function(GaGroupsNr, gaGroups, popNr, metrics, funNr, iterations, crossProb, mutProb, cecNr){
+  GA.pop.anal = c()
+  gaPopulation(funNr, 100, 10, iterations, crossProb, mutProb)
+  GA.pop.anal.cldata <- populationToClusterAnalysis(populationToData(GA.pop.anal), popNr)
+  
+  fun = partial(cec2013, i=cecNr)
+  
+  groupingResPAM <- list()
+  groupingResH <- list()
+  groupingResK <- list()
+  
+  # GRUPOWANIE
+  if (GaGroupsNr==3){
+    groupingResK = assessGroupingAlgorithm(GA.pop.anal.cldata, popNr, "kclust", fun, tryAllK = TRUE)
+    groupingResH = assessGroupingAlgorithm(GA.pop.anal.cldata, popNr, metric = metrics, "hclust", fun)
+    groupingResPAM = assessGroupingAlgorithm(GA.pop.anal.cldata, popNr, "pam", fun, tryAllK = TRUE)
+  } else if (GaGroupsNr==2){
+    if (gaGroups[1]=="hclust" || gaGroups[2]== "hclust"){
+      groupingResH = assessGroupingAlgorithm(GA.pop.anal.cldata, popNr, metric = metrics, "hclust", fun)
+    }
+    if (gaGroups[1]=="pam" || gaGroups[2]== "pam"){
+      groupingResPAM = assessGroupingAlgorithm(GA.pop.anal.cldata, popNr, "pam", fun, tryAllK = TRUE)
+    }
+    if (gaGroups[1]=="kmeans" || gaGroups[2]== "kmeans"){
+      groupingResK = assessGroupingAlgorithm(GA.pop.anal.cldata, popNr, "kclust", fun, tryAllK = TRUE)
+    }
+  } else
+  {
+    if (gaGroups[1]=="hclust" ){
+      groupingResH = assessGroupingAlgorithm(GA.pop.anal.cldata, popNr, metric = metrics, "hclust", fun)
+    }
+    if (gaGroups[1]=="pam"){
+      groupingResPAM = assessGroupingAlgorithm(GA.pop.anal.cldata, popNr, "pam", fun, tryAllK = TRUE)
+    }
+    if (gaGroups[1]=="kmeans"){
+      groupingResK = assessGroupingAlgorithm(GA.pop.anal.cldata, popNr, "kclust", fun, tryAllK = TRUE)
+    }
+  }
+  grouping <- c(groupingResK, groupingResH, groupingResPAM)
+  return(grouping)
+}
+
+
+
 source("read_params.R")
 parameters = readInputParams()
 metrics = parameters$metrics
@@ -312,7 +325,13 @@ gaGroups = parameters$GaGroups
 # liczba opcjonalnych parametrów + wartości
 GAparamsNr = parameters$GAparamsNr
 GAparams = parameters$GAparams
-
+# te parametry do wywołania GA ewentualnie
+if (GAparamsNr != 0){
+  GAfunNr = strtoi(GAparams[1])
+  GAiteratins = strtoi(GAparams[2])
+  GAcrossover = as.numeric(GAparams[3])
+  GAmutation = as.numeric(GAparams[4])
+}
 #print(GAparams[2])
 
 GA.pop = c()
@@ -330,9 +349,9 @@ for(funNr in 7:9){
   registerDoSEQ()
   DE.pop <- DEoptim(partial(cec2013, i=funNr), rep(-100, 10), rep(100, 10),
                        DEoptim.control(storepopfrom = 0, trace=FALSE, parallelType=2, itermax=1000))$member$storepop
-  GA.cldata <- populationToClusterAnalysis(populationToData(GA.pop))
-  DE.cldata <- populationToClusterAnalysis(populationToData(DE.pop))
-  RBGA.cldata <- populationToClusterAnalysis(populationToData(RBGA.pop))
+  GA.cldata <- populationToClusterAnalysis(populationToData(GA.pop), 10)
+  DE.cldata <- populationToClusterAnalysis(populationToData(DE.pop), 10)
+  RBGA.cldata <- populationToClusterAnalysis(populationToData(RBGA.pop), 10)
 
   GA.bestCounter <- 0
   DE.bestCounter <- 0
@@ -397,40 +416,6 @@ for(funNr in 7:9){
     RBGAres$Pdunn <- dunn(RBGA.dist, RBGA.Pgroup)
     RBGAres$Hdunn <- dunn(RBGA.dist, RBGA.Kgroup)
   #  RBGAres$Ddunn <- dunn(RBGA.dist, RBGA.Dgroup)
-    GAres$Ksil <- summary(silhouette(GA.Kgroup, GA.dist))$avg.width
-    GAres$Psil <- summary(silhouette(GA.Pgroup, GA.dist))$avg.width # mozna by wyciagac silhouette z samego pam, ale nalezaloby przerobic wiecej rzeczy przed tym krokiem
-    GAres$Hsil <- summary(silhouette(GA.Hgroup, GA.dist))$avg.width
-  #  GAres$Dsil <- summary(silhouette(GA.Dgroup, GA.dist))$avg.width
-    DEres$Ksil <- summary(silhouette(DE.Kgroup, DE.dist))$avg.width
-    DEres$Psil <- summary(silhouette(DE.Pgroup, DE.dist))$avg.width
-    DEres$Hsil <- summary(silhouette(DE.Hgroup, DE.dist))$avg.width
-   # DEres$Dsil <- summary(silhouette(DE.Dgroup, DE.dist))$avg.width
-    RBGAres$Ksil <- summary(silhouette(RBGA.Kgroup, RBGA.dist))$avg.width
-    RBGAres$Psil <- summary(silhouette(RBGA.Pgroup, RBGA.dist))$avg.width
-    RBGAres$Hsil <- summary(silhouette(RBGA.Hgroup, RBGA.dist))$avg.width
-   # RBGAres$Dsil <- summary(silhouette(RBGA.Dgroup, RBGA.dist))$avg.width
-    maxKdunn = max(GAres$Kdunn, DEres$Kdunn, RBGAres$Kdunn)
-    maxHdunn = max(GAres$Hdunn, DEres$Hdunn, RBGAres$Hdunn)
-    maxPdunn = max(GAres$Pdunn, DEres$Pdunn, RBGAres$Pdunn)
-   # maxDdunn = max(GAres$Ddunn, DEres$Ddunn, RBGAres$Ddunn)
-    maxKsil = max(GAres$Ksil, DEres$Ksil, RBGAres$Ksil)
-    maxHsil = max(GAres$Hsil, DEres$Hsil, RBGAres$Hsil)
-    maxPsil = max(GAres$Psil, DEres$Psil, RBGAres$Psil)
-  #  maxDsil = max(GAres$Dsil, DEres$Dsil, RBGAres$Dsil)
-    resultList$GA[[i+1]] = GAres
-    resultList$DE[[i+1]] = DEres
-    resultList$RBGA[[i+1]] = RBGAres
-
-    if(maxKdunn==GAres$Kdunn){
-      GA.bestCounter <- GA.bestCounter + 1
-    } else if(maxKdunn==DEres$Kdunn){
-      DE.bestCounter <- DE.bestCounter + 1
-    } else if(maxKdunn==RBGAres$Kdunn){
-      RBGA.bestCounter <- RBGA.bestCounter + 1
-    }
-
-    if(maxHdunn==GAres$Hdunn){
-      GA.bestCounter <- GA.bestCounter + 1
     } else if(maxHdunn==DEres$Hdunn){
       DE.bestCounter <- DE.bestCounter + 1
     }  else if(maxHdunn==RBGAres$Hdunn){

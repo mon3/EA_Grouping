@@ -70,7 +70,7 @@ for (i in 1:gaProvided){
 
 result <- list("metrics"= metrics, "popNr"=populationNumber, 
                "GaGroupsNr" =  groupingNumberGA, "gaGroups" = gaGroup, "GAparamsNr" = gaProvided, "GAparams" = gaArgs)
-#print(result)
+# print(result)
 return(result)
 }
 
