@@ -44,6 +44,10 @@ getBestHClust <- function(minimum = 2, maximum, distance, type = "average"){
     currentGrouping <- cutree(fit, k=i)
     currentSil <- silhouette(currentGrouping, distance)
     currentWidth <- summary(currentSil)$avg.width
+    print("CURRENT WIDTH =")
+    print(currentWidth)
+    print("BEST WIDTH = ")
+    print(bestWidth)
     if(currentWidth>bestWidth){
       bestGrouping <- currentGrouping
       bestWidth <- currentWidth
@@ -124,7 +128,10 @@ populationToClusterAnalysis <- function(data, popNr){
   popToClust = matrix(0, nrow = popNr*100, ncol = 10)
   popToClust <- data.frame(popToClust)
   coeff = 1/popNr
-  
+  print("ROWS = ")
+  print(nrow(popToClust))
+  print("Coeff= ")
+  print(coeff)
   for (i in 1:popNr){
     ind1low = i*100-99
     ind1high=i*100
@@ -334,6 +341,9 @@ if (GAparamsNr != 0){
   GAmutation = as.numeric(GAparams[4])
 }
 #print(GAparams[2])
+print("AGNES TYPE = ")
+print(agnesType)
+
 
 GA.pop = c()
 GA.pop.anal = c()
@@ -341,7 +351,7 @@ DE.pop = c()
 RBGA.pop = c()
 results = list()
 
-for(funNr in 7:9){
+for(funNr in 7){
   ga(type = "real-valued", fitness = partial(cec2013, i=funNr), min = rep(-100, 10), max = rep(100, 10),
      maxiter = 1000, popSize=100, parallel = TRUE, monitor = partial(gaSavePopulation, name="GA.pop"))
   rbga(stringMin = rep(-100,10), stringMax = rep(100,10), suggestions=NULL, popSize=100, iters = 1000,
@@ -359,13 +369,16 @@ for(funNr in 7:9){
   RBGA.bestCounter <- 0
   resultList = list(GA = list(), DE = list(), RBGA = list())
 
-  for(i in 0:9){
+  for(i in 0:(popNr-1)){
     start = i*100+1
     end = i*100+100
     GA.current <- GA.cldata[c(start:end),]
+    print(nrow(GA.current))
+    # TODO: tutaj jest cos zle :(
     DE.current <- DE.cldata[c(start:end),]
     RBGA.current <- RBGA.cldata[c(start:end),]
     GA.dist <- dist(GA.current)
+    print(GA.dist)
     DE.dist <- dist(DE.current)
     RBGA.dist <- dist(RBGA.current)
 
@@ -373,8 +386,8 @@ for(funNr in 7:9){
     DEres = list()
     RBGAres = list()
     
-    print("METRICS  = ")
-    print(metrics)
+  #  print("METRICS  = ")
+ #   print(metrics)
 
     GA.Hgroup <- getBestHClust(2, 15, GA.current, agnesType)
 

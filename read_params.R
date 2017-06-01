@@ -11,7 +11,7 @@ if (is.na(populationNumber) == TRUE){
   print("Wrong pop number provided")
 }
 
-agnesType = strtoi(args[argsIter<-argsIter+1])
+agnesType = args[argsIter<-argsIter+1]
 
 
 # metody grupowania dla GA
@@ -71,7 +71,7 @@ for (i in 1:gaProvided){
 #print(gaProvided)
 #print(gaArgs)
 
-result <- list("metrics"= metrics, "popNr"=populationNumber, 
+result <- list("metrics"= metrics, "popNr"=populationNumber, "agnesType" = agnesType,
                "GaGroupsNr" =  groupingNumberGA, "gaGroups" = gaGroup, "GAparamsNr" = gaProvided, "GAparams" = gaArgs)
 # print(result)
 return(result)
