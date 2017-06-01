@@ -320,6 +320,7 @@ source("read_params.R")
 parameters = readInputParams()
 metrics = parameters$metrics
 popNr = parameters$popNr
+agnesType = parameters$agnesType
 GaGroupsNr = parameters$GaGroupsNr
 gaGroups = parameters$GaGroups
 # liczba opcjonalnych parametrów + wartości
@@ -372,33 +373,23 @@ for(funNr in 7:9){
     DEres = list()
     RBGAres = list()
     
-    if (metrics == "euclidean" || metrics=="manhattan"){
-      GA.Hgroup <- getBestHClust(2, 15, GA.current, metrics)
-    }else {
-      # domyślna metryka "euclidesowa"
-      GA.Hgroup <- getBestHClust(2, 15, GA.current, "euclidean")
-    }
+    print("METRICS  = ")
+    print(metrics)
+
+    GA.Hgroup <- getBestHClust(2, 15, GA.current, agnesType)
+
     # jako ze mamy wektory cech 10-wym, to z wykresów za dużo nie wynika
     # plot(GA.current, GA.Hgroup)
     GA.Kgroup <- kMeansClustering(GA.current, 2, 15)
     GA.Pgroup <- pamClustering(GA.current, 2, 15)
     #GA.Dgroup <- dbscanAnalyse(GA.current, 11, 100)
     
-    
-    if (metrics == "euclidean" || metrics=="manhattan"){
-      DE.Hgroup <- getBestHClust(2, 15, DE.current, metrics)
-    }else {
-      DE.Hgroup <- getBestHClust(2, 15, DE.current, "euclidean")
-    }
+    DE.Hgroup <- getBestHClust(2, 15, DE.current, agnesType)
     DE.Kgroup <- kMeansClustering(DE.current, 2, 15)
     DE.Pgroup <- pamClustering(DE.current, 2, 15)
     #DE.Dgroup <- dbscanAnalyse(DE.current, 11, 100)
     
-    if (metrics == "euclidean" || metrics=="manhattan"){
-      RBGA.Hgroup <- getBestHClust(2, 15, RBGA.current, metrics)
-    }else {
-      RBGA.Hgroup <- getBestHClust(2, 15, RBGA.current, "euclidean")
-    }
+    RBGA.Hgroup <- getBestHClust(2, 15, RBGA.current, agnesType)
     RBGA.Kgroup <- kMeansClustering(RBGA.current, 2, 15)
     RBGA.Pgroup <- pamClustering(RBGA.current, 2, 15)
     #RBGA.Dgroup <- dbscanAnalyse(RBGA.current, 11, 100)

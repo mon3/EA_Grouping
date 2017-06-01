@@ -11,6 +11,9 @@ if (is.na(populationNumber) == TRUE){
   print("Wrong pop number provided")
 }
 
+agnesType = strtoi(args[argsIter<-argsIter+1])
+
+
 # metody grupowania dla GA
 groupingNumberGA = strtoi(args[argsIter<-argsIter+1])
 gaGroup = c()
