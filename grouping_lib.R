@@ -44,10 +44,10 @@ getBestHClust <- function(minimum = 2, maximum, distance, type = "average"){
     currentGrouping <- cutree(fit, k=i)
     currentSil <- silhouette(currentGrouping, distance)
     currentWidth <- summary(currentSil)$avg.width
-    print("CURRENT WIDTH =")
-    print(currentWidth)
-    print("BEST WIDTH = ")
-    print(bestWidth)
+    #print("CURRENT WIDTH =")
+    #print(currentWidth)
+    #print("BEST WIDTH = ")
+    #print(bestWidth)
     if(currentWidth>bestWidth){
       bestGrouping <- currentGrouping
       bestWidth <- currentWidth
@@ -128,10 +128,10 @@ populationToClusterAnalysis <- function(data, popNr){
   popToClust = matrix(0, nrow = popNr*100, ncol = 10)
   popToClust <- data.frame(popToClust)
   coeff = 1/popNr
-  print("ROWS = ")
-  print(nrow(popToClust))
-  print("Coeff= ")
-  print(coeff)
+  #print("ROWS = ")
+  #print(nrow(popToClust))
+  #print("Coeff= ")
+  #print(coeff)
   for (i in 1:popNr){
     ind1low = i*100-99
     ind1high=i*100
@@ -369,16 +369,16 @@ for(funNr in 7){
   RBGA.bestCounter <- 0
   resultList = list(GA = list(), DE = list(), RBGA = list())
 
-  for(i in 0:(popNr-1)){
+  for(i in 0:9){
     start = i*100+1
     end = i*100+100
     GA.current <- GA.cldata[c(start:end),]
-    print(nrow(GA.current))
+    #print(nrow(GA.current))
     # TODO: tutaj jest cos zle :(
     DE.current <- DE.cldata[c(start:end),]
     RBGA.current <- RBGA.cldata[c(start:end),]
     GA.dist <- dist(GA.current)
-    print(GA.dist)
+    #print(GA.dist)
     DE.dist <- dist(DE.current)
     RBGA.dist <- dist(RBGA.current)
 
@@ -389,37 +389,53 @@ for(funNr in 7){
   #  print("METRICS  = ")
  #   print(metrics)
 
-    GA.Hgroup <- getBestHClust(2, 15, GA.current, agnesType)
 
     # jako ze mamy wektory cech 10-wym, to z wykresów za dużo nie wynika
     # plot(GA.current, GA.Hgroup)
-    GA.Kgroup <- kMeansClustering(GA.current, 2, 15)
-    GA.Pgroup <- pamClustering(GA.current, 2, 15)
-    #GA.Dgroup <- dbscanAnalyse(GA.current, 11, 100)
+    GAres$Hgroup <- getBestHClust(2, 15, GA.dist, agnesType)
+    GAres$Kgroup <- kMeansClustering(GA.dist, 2, 15)
+    GAres$Pgroup <- pamClustering(GA.dist, 2, 15)
     
-    DE.Hgroup <- getBestHClust(2, 15, DE.current, agnesType)
-    DE.Kgroup <- kMeansClustering(DE.current, 2, 15)
-    DE.Pgroup <- pamClustering(DE.current, 2, 15)
-    #DE.Dgroup <- dbscanAnalyse(DE.current, 11, 100)
+    DEres$Hgroup <- getBestHClust(2, 15, DE.dist, agnesType)
+    DEres$Kgroup <- kMeansClustering(DE.dist, 2, 15)
+    DEres$Pgroup <- pamClustering(DE.dist, 2, 15)
     
-    RBGA.Hgroup <- getBestHClust(2, 15, RBGA.current, agnesType)
-    RBGA.Kgroup <- kMeansClustering(RBGA.current, 2, 15)
-    RBGA.Pgroup <- pamClustering(RBGA.current, 2, 15)
-    #RBGA.Dgroup <- dbscanAnalyse(RBGA.current, 11, 100)
+    RBGAres$Hgroup <- getBestHClust(2, 15, RBGA.dist, agnesType)
+    RBGAres$Kgroup <- kMeansClustering(RBGA.dist, 2, 15)
+    RBGAres$Pgroup <- pamClustering(RBGA.dist, 2, 15)
 
-    GAres$Kdunn <- dunn(GA.dist, GA.Hgroup)
-    GAres$Pdunn <- dunn(GA.dist, GA.Pgroup)
-    GAres$Hdunn <- dunn(GA.dist, GA.Kgroup)
+    GAres$Kdunn <- dunn(GA.dist, GAres$Hgroup)
+    GAres$Pdunn <- dunn(GA.dist, GAres$Pgroup)
+    GAres$Hdunn <- dunn(GA.dist, GAres$Kgroup)
+    DEres$Kdunn <- dunn(DE.dist, DEres$Hgroup)
+    DEres$Pdunn <- dunn(DE.dist, DEres$Pgroup)
+    DEres$Hdunn <- dunn(DE.dist, DEres$Kgroup)
+    RBGAres$Kdunn <- dunn(RBGA.dist, RBGAres$Hgroup)
+    RBGAres$Pdunn <- dunn(RBGA.dist, RBGAres$Pgroup)
+    RBGAres$Hdunn <- dunn(RBGA.dist, RBGAres$Kgroup)
     
-  #  GAres$Ddunn <- dunn(GA.dist, GA.Dgroup)
-    DEres$Kdunn <- dunn(DE.dist, DE.Hgroup)
-    DEres$Pdunn <- dunn(DE.dist, DE.Pgroup)
-    DEres$Hdunn <- dunn(DE.dist, DE.Kgroup)
-   # DEres$Ddunn <- dunn(DE.dist, DE.Dgroup)
-    RBGAres$Kdunn <- dunn(RBGA.dist, RBGA.Hgroup)
-    RBGAres$Pdunn <- dunn(RBGA.dist, RBGA.Pgroup)
-    RBGAres$Hdunn <- dunn(RBGA.dist, RBGA.Kgroup)
-    if(maxHdunn==Gares$Hdunn){
+    
+    GAres$Ksil <- summary(silhouette(GAres$Kgroup, GA.dist))$avg.width
+    GAres$Psil <- summary(silhouette(GAres$Pgroup, GA.dist))$avg.width # mozna by wyciagac silhouette z samego pam, ale nalezaloby przerobic wiecej rzeczy przed tym krokiem
+    GAres$Hsil <- summary(silhouette(GAres$Hgroup, GA.dist))$avg.width
+    DEres$Ksil <- summary(silhouette(DEres$Kgroup, DE.dist))$avg.width
+    DEres$Psil <- summary(silhouette(DEres$Pgroup, DE.dist))$avg.width
+    DEres$Hsil <- summary(silhouette(DEres$Hgroup, DE.dist))$avg.width
+    RBGAres$Ksil <- summary(silhouette(RBGAres$Kgroup, RBGA.dist))$avg.width
+    RBGAres$Psil <- summary(silhouette(RBGAres$Pgroup, RBGA.dist))$avg.width
+    RBGAres$Hsil <- summary(silhouette(RBGAres$Hgroup, RBGA.dist))$avg.width
+    maxKdunn = max(GAres$Kdunn, DEres$Kdunn, RBGAres$Kdunn)
+    maxHdunn = max(GAres$Hdunn, DEres$Hdunn, RBGAres$Hdunn)
+    maxPdunn = max(GAres$Pdunn, DEres$Pdunn, RBGAres$Pdunn)
+    maxKsil = max(GAres$Ksil, DEres$Ksil, RBGAres$Ksil)
+    maxHsil = max(GAres$Hsil, DEres$Hsil, RBGAres$Hsil)
+    maxPsil = max(GAres$Psil, DEres$Psil, RBGAres$Psil)
+    
+    resultList$GA[[i+1]] = GAres
+    resultList$DE[[i+1]] = DEres
+    resultList$RBGA[[i+1]] = RBGAres
+    
+    if(maxHdunn==GAres$Hdunn){
       GA.bestCounter <- GA.bestCounter + 1
     } else if(maxHdunn==DEres$Hdunn){
       DE.bestCounter <- DE.bestCounter + 1
