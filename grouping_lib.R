@@ -127,16 +127,24 @@ pamClustering <- function(distance, minimum=2, maximum){
 populationToClusterAnalysis <- function(data, popNr){
   popToClust = matrix(0, nrow = popNr*100, ncol = 10)
   popToClust <- data.frame(popToClust)
-  coeff = 1/popNr
+  coeff = nrow(data)/popNr
   #print("ROWS = ")
   #print(nrow(popToClust))
   #print("Coeff= ")
   #print(coeff)
   for (i in 1:popNr){
-    ind1low = i*100-99
-    ind1high=i*100
-    ind2low = i*coeff*nrow(data)-99
-    ind2high = i* coeff * nrow(data)
+    ind1low = (i-1)*100+1
+    ind1high= ind1low + 99
+    print("i1_low")
+    print(ind1low)
+    print("i1_high")
+    print(ind1high)
+    ind2low = i*coeff-99 # nie daje (i-1), zeby miec ostatnia populacje
+    ind2high = ind2low + 99
+    print("i2_low")
+    print(ind2low)
+    print("i2_high")
+    print(ind2high)
     popToClust[ind1low:ind1high,] = data[ind2low:ind2high,]
   }
   # zwraca zbior populacji z poszczegolnych krokow AE, dla ktorej bedzie przeprowadzona analiza grupowania
