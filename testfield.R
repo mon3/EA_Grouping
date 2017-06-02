@@ -89,7 +89,10 @@ kMeansClustering <- function(distance, minimum=2, maximum){
   bestWidth = -1.0
   
   for(i in minimum:maximum){
-    fit <- kmeans(distance, i, 20, nstart = 3)
+    fit <- kmeans(distance, i, 50, nstart = 3)
+    if(fit$ifault==4){
+      fit <- kmeans(distance, i, 50, algorithm="MacQueen")
+    }
     currentGrouping <- fit$cluster
     currentSil <- silhouette(currentGrouping, distance)
     currentWidth <- summary(currentSil)$avg.width
