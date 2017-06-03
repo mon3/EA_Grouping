@@ -8,6 +8,21 @@ library(clValid)
 library(parallel)
 library(doParallel)
 library(dbscan)
+library(jsonlite)
+
+plotClusters <- function(plotName, funNr){
+fileName <- 'klist.json'
+kliststring <- readChar(fileName, file.info(fileName)$size)
+
+results <- unserializeJSON(kliststring)
+x <- seq(1,50,1)
+pdf(plotName)
+plot(x, results[[funNr]][1:50,1], col="green", main="Srednia liczba klastrow cec2013(15)", xlab="nr pokolenia", ylab ="liczba grup", ylim=c(0,15))
+points(x, results[[funNr]][1:50,2], col="red")
+points(x, results[[funNr]][1:50,3], col="blue")
+legend("bottomleft", legend=c("hclust", "pam", "kmeans"), col=c("green", "red", "blue"),lty=1, cex=1.0)
+dev.off()
+}
 
 
 partial <- function(f, ...) {
