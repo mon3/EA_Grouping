@@ -72,15 +72,6 @@ groupIndex <- function(dataset, grouping, fun){
   return(betterNr/groupsNr)
 }
 
-# do wyznaczania optymalej liczby klastrow dla k-means, maxClusters - maksymalna dopuszczalna liczba klastrow
-# obecnie: nie jest uzywana
-determineNumberOfClusters <- function(dataset, maxClusters){
-  wss <- (nrow(dataset)-1)*sum(apply(dataset,2,var))
-  for (i in 2:maxClusters) wss[i] <- sum(kmeans(dataset,centers=i)$withinss)
-  plot(1:maxClusters, wss, type="b", xlab="Number of Clusters",
-       ylab="Within groups sum of squares")
-}
-
 # tylko dla metryki Euklidesowej!
 # wyznaczenie optymalnej liczby klastrow dla grupowania k-srednich
 # na podstawie wspolczynnika Silhouette
@@ -122,11 +113,7 @@ pamClustering <- function(distance, minimum=2, maximum){
   return(bestGrouping)
 }
 
-
-
-
-
-# dla populacji 100 osobnikow, wybieramy co 1/10 iteracji alg. ewolucyjnego
+# dla populacji 100 osobnikow, wybieramy co 1/popNr iteracji alg. ewolucyjnego
 populationToClusterAnalysis <- function(data, popNr){
   popToClust = matrix(0, nrow = popNr*100, ncol = 10)
   popToClust <- data.frame(popToClust)
@@ -146,93 +133,13 @@ populationToClusterAnalysis <- function(data, popNr){
   return(popToClust)
 }
 
-# finds optimal eps parameter for the dataset depending on the allowed % of noise points
-# returns vector of clusters with optimal eps parameter
-dbscanAnalyse <- function(dataset, minPts, dim=100){
-  part = 0.5;
-  i = 1.0
-  while (part > 0.2)
-  {
-    # print("here")
-    ds <- dbscan(dataset, eps = i, minPts = 11)
-    i = i+1.0
-    part = sum(ds$cluster==0)/100
-  }
-  print (ds$eps)
-  return (ds$cluster)
-}
-
-gaPopulation <- function(funNr, poplSize, indivSize, iterations, crossProb, mutProb){
-  ga(type = "real-valued", fitness = partial(cec2013, i=funNr), min = rep(poplSize*-1, indivSize), max = rep(poplSize, indivSize),
-     maxiter = iterations, popSize=poplSize, pcrossover = crossProb, pmutation = mutProb, parallel = TRUE, monitor = partial(gaSavePopulation, name="GA.pop.anal"), seed=12345)
-}
-
-
-# algType: PAM, k-means; indexType: 1-silhouette, 2-Dunn, 3-averages;
-kAlgorithmGroupingQuality <- function(minK=2, maxK, algType, indexType){
-  GA.anal.cldata <- populationToClusterAnalysis(populationToData(GA.pop.anal), 10) # populacje z poszczególnych kroków GA
-  
-  distance <- dist(GA.anal.cldata[901:1000,], method = "euclidean")
-  bestGrouping = as.data.frame(rep(1, 100))
-  bestWidth = -1.0
-  resSil <- vector()
-  resDun <- vector()
-  
-  if (algType == "PAM"){
-    for(i in minK:maxK){
-      fit <- pam(dataset, i, diss = inherits(dataset, "dist"), metric = "euclidean")
-      currentGrouping <- fit$clustering
-      currentSil <- fit$silinfo
-      currentWidth <- fit$silinfo$avg.width
-      resSil[i-1] <- fit$silinfo$avg.width
-      resDun[i-1] <- dunn(distance, currentGrouping)
-      # zapisujemy silhouette i k
-      if(currentWidth>bestWidth){
-        bestGrouping <- currentGrouping
-        bestWidth <- currentWidth
-      }
-    }
-  }
-  else if (algType == "k-means"){
-    
-    for(i in minK:maxK){
-      fit <- kmeans(dataset, i)
-      currentGrouping <- fit$cluster
-      currentSil <- silhouette(currentGrouping, distance)
-      currentWidth <- summary(currentSil)$avg.width
-      resSil[i-1] <- currentWidth
-      resDun[i-1] <- dunn(distance, currentGrouping)
-      # zapisujemy silhouette i k
-      if(currentWidth>bestWidth){
-        bestGrouping <- currentGrouping
-        bestWidth <- currentWidth
-      }
-    }
-  }
-  
-  if (indexType==1){
-    print("SILHOUETTE")
-    print (resSil)
-    print("Optimal k = ")
-    print(which(resSil==max(resSil)))
-    
-  }
-  else if (indexType==2){
-    print("DUNN")
-    print(resDun)
-    print("Optimal k = ")
-    print(which(resDun==max(resDun)))
-  }
-  
-}
-
 assessGroupingAlgorithm <- function(data, npops, algorithm, func, hmethod = "average", metric = "euclidean", kMin = 2, kMax = 15, tryAllK = FALSE){
   groupingResults = list()
   step = nrow(data)/npops
   
   for(i in 0:(npops-1)){
-    start = i*step+1
-    end = i*step+100
+    start <- i*step+1
+    end <- i*step+100
     pop.current <- data[c(start:end),]
     if(algorithm == "hclust" && !is.null(metric)){
       if(metric == "squared"){
@@ -282,61 +189,17 @@ assessGroupingAlgorithm <- function(data, npops, algorithm, func, hmethod = "ave
   return(groupingResults)
 }
 
-# returns list of results for different grouping algorithms
-runGAGrouping <- function(GaGroupsNr, gaGroups, popNr, metrics, funNr, iterations, crossProb, mutProb, cecNr){
-  GA.pop.anal = c()
-  gaPopulation(funNr, 100, 10, iterations, crossProb, mutProb)
-  GA.pop.anal.cldata <- populationToClusterAnalysis(populationToData(GA.pop.anal), popNr)
-  
-  fun = partial(cec2013, i=cecNr)
-  
-  groupingResPAM <- list()
-  groupingResH <- list()
-  groupingResK <- list()
-  
-  # GRUPOWANIE
-  if (GaGroupsNr==3){
-    groupingResK = assessGroupingAlgorithm(GA.pop.anal.cldata, popNr, "kclust", fun, tryAllK = TRUE)
-    groupingResH = assessGroupingAlgorithm(GA.pop.anal.cldata, popNr, metric = metrics, "hclust", fun)
-    groupingResPAM = assessGroupingAlgorithm(GA.pop.anal.cldata, popNr, "pam", fun, tryAllK = TRUE)
-  } else if (GaGroupsNr==2){
-    if (gaGroups[1]=="hclust" || gaGroups[2]== "hclust"){
-      groupingResH = assessGroupingAlgorithm(GA.pop.anal.cldata, popNr, metric = metrics, "hclust", fun)
-    }
-    if (gaGroups[1]=="pam" || gaGroups[2]== "pam"){
-      groupingResPAM = assessGroupingAlgorithm(GA.pop.anal.cldata, popNr, "pam", fun, tryAllK = TRUE)
-    }
-    if (gaGroups[1]=="kmeans" || gaGroups[2]== "kmeans"){
-      groupingResK = assessGroupingAlgorithm(GA.pop.anal.cldata, popNr, "kclust", fun, tryAllK = TRUE)
-    }
-  } else
-  {
-    if (gaGroups[1]=="hclust" ){
-      groupingResH = assessGroupingAlgorithm(GA.pop.anal.cldata, popNr, metric = metrics, "hclust", fun)
-    }
-    if (gaGroups[1]=="pam"){
-      groupingResPAM = assessGroupingAlgorithm(GA.pop.anal.cldata, popNr, "pam", fun, tryAllK = TRUE)
-    }
-    if (gaGroups[1]=="kmeans"){
-      groupingResK = assessGroupingAlgorithm(GA.pop.anal.cldata, popNr, "kclust", fun, tryAllK = TRUE)
-    }
-  }
-  grouping <- c(groupingResK, groupingResH, groupingResPAM)
-  return(grouping)
-}
-
+populations <- list()
 for(funNr in 6:15){
-  currName1 = paste("pop1.", funNr, sep="")
-  currName2 = paste("pop2.", funNr, sep="")
-  env = globalenv()
-  env[[currName1]] <- list()
-  env[[currName2]] <- list()
-rbga(stringMin = rep(-100,10), stringMax = rep(100,10), suggestions=NULL, popSize=100, iters = 1000,
-     mutationChance=NA, elitism=NA, monitorFunc=partial(rbgaSavePopulation, name=currName1),
+  funcpop <- list()
+  for(i in 1:10){
+    currentpop <- list()
+    rbga(stringMin = rep(-100,10), stringMax = rep(100,10), suggestions=NULL, popSize=100, iters = 1000,
+       mutationChance=NA, elitism=NA, monitorFunc=partial(rbgaSavePopulation, name="currentpop"),
                                                         evalFunc = partial(cec2013, i=funNr))
-rbga(stringMin = rep(-100,10), stringMax = rep(100,10), suggestions=NULL, popSize=100, iters = 1000,
-     mutationChance=NA, elitism=NA, monitorFunc=partial(rbgaSavePopulation, name=currName2),
-                                                        evalFunc = partial(cec2013, i=funNr))
+    funcpop[[i]] <- currentpop
+  }
+  populations[[funNr]] <- funcpop
 }
 
 resultMaster <- list()
@@ -345,38 +208,76 @@ hclustMetrics <- list("euclidean", "maximum", "manhattan")
 pamMetrics <- list("euclidean", "manhattan")
 for(funNr in 6:15){
   resultSingle <- list()
-  currName1 = paste("pop1.", funNr, sep="")
-  currName2 = paste("pop2.", funNr, sep="")
-  env = globalenv()
-  current_p1 <- env[[currName1]]
-  current_p2 <- env[[currName2]]
-  data_p1 <- populationToClusterAnalysis(populationToData(current_p1), npops)
-  data_p2 <- populationToClusterAnalysis(populationToData(current_p2), npops)
+
+  data_pops <- list()
+  #wyciecie npops populacji ze zbioru wygenerowanych danych dla kazdego z 10 przebiegow optymalizacji
+  for(n in 1:10){
+    data_pops[[n]] <- populationToClusterAnalysis(populationToData(populations[[funNr]][[n]]), npops)
+  }
+  
   hclust <- list()
+  #uruchomienie grupowania dla kazdej z metryk hclust na wycietych populacjach kazdego przebiegu
   for(m in 1:length(hclustMetrics)){
     hclustSingle <- list()
-    hclustSingle[[1]] <- assessGroupingAlgorithm(data_p1, npops, "hclust", partial(cec2013, i=funNr), 
-                                                 metric = hclustMetrics[[m]])
-    hclustSingle[[2]] <- assessGroupingAlgorithm(data_p2, npops, "hclust", partial(cec2013, i=funNr), 
-                                                 metric = hclustMetrics[[m]])
+    for(n in 1:10){
+      hclustSingle[[n]] <- assessGroupingAlgorithm(data_pops[[n]], npops, "hclust", partial(cec2013, i=funNr), 
+                                                   metric = hclustMetrics[[m]])
+    }
     hclust[[hclustMetrics[[m]]]] <- hclustSingle
   }
   resultSingle$hclust <- hclust
   
   pamc <- list()
+  #uruchomienie grupowania dla kazdej z metryk pam na wycietych populacjach kazdego przebiegu
   for(m in 1:length(pamMetrics)){
     pamcSingle <- list()
-    pamcSingle[[1]] <- assessGroupingAlgorithm(data_p1, npops, "pam", partial(cec2013, i=funNr), 
-                                                 metric = pamMetrics[[m]])
-    pamcSingle[[2]] <- assessGroupingAlgorithm(data_p2, npops, "pam", partial(cec2013, i=funNr), 
-                                                 metric = pamMetrics[[m]])
-    pamc[[pamMetrics[[m]]]] <- pamcSingle
+    for(n in 1:10){
+      pamcSingle[[n]] <- assessGroupingAlgorithm(data_pops[[n]], npops, "pam", partial(cec2013, i=funNr), 
+                                                   metric = pamMetrics[[m]])
+      pamc[[pamMetrics[[m]]]] <- pamcSingle
+    }
+    resultSingle$pam <- pamc
   }
-  resultSingle$pam <- pamc
   
   kmean <- list()
-  kmean[[1]] <- assessGroupingAlgorithm(data_p1, npops, "kmeans", partial(cec2013, i=funNr))
-  kmean[[2]] <- assessGroupingAlgorithm(data_p2, npops, "kmeans", partial(cec2013, i=funNr))
+  #uruchomienie grupowania dla kmeans na wycietych populacjach kazdego przebiegu
+  for(n in 1:10){
+    kmean[[n]] <- assessGroupingAlgorithm(data_pops[[n]], npops, "kmeans", partial(cec2013, i=funNr))
+  }
   resultSingle$kmeans <- kmean
+  
+  #zrzucenie danych dla danej funkcji cec do glownej listy
   resultMaster[[funNr]] <- resultSingle
 }
+
+hscores = list()
+for(i in 6:15){
+  singlescore = list()
+  for(j in seq(1,50)){
+    singlescore[[j]] <- list()
+    for(k in 1:10){
+    singlescore[[j]]$dunn <- singlescore[[j]]$dunn + resultMaster[[i]]$hclust$euclidean[[k]][[j]]$dunn
+    singlescore[[j]]$sil <- singlescore[[j]]$sil + resultMaster[[i]]$hclust$euclidean[[k]][[j]]$sil
+    singlescore[[j]]$gind <- singlescore[[j]]$gind+ resultMaster[[i]]$hclust$euclidean[[k]][[j]]$gind
+    singlescore[[j]]$k <- singlescore[[j]]$k + resultMaster[[i]]$hclust$euclidean[[k]][[j]]$k
+    }
+  }
+  hscores[[i]] <- singlescore
+}
+
+klist = list()
+for(i in 6:15){
+  singlek <- matrix(data = 0, nrow = 50, ncol = 3, dimnames = list(c(), c("hclust", "pam", "kmeans")))
+  for(j in 1:50){
+    for(k in 1:10){
+      singlek[j,1] <- singlek[j,1] + resultMaster[[i]]$hclust$euclidean[[k]][[j]]$k
+      singlek[j,2] <- singlek[j,2] +resultMaster[[i]]$pam$euclidean[[k]][[j]]$k
+      singlek[j,3] <- singlek[j,3] + resultMaster[[i]]$kmeans[[k]][[j]]$k
+    }
+    singlek[j,1] <- singlek[j,1]/10
+    singlek[j,2] <- singlek[j,2]/10
+    singlek[j,3] <- singlek[j,3]/10
+  }
+  klist[[i]] <- singlek
+}
+
