@@ -253,24 +253,40 @@ for(funNr in 6:15){
 hscores = list()
 for(i in 6:15){
   singlescore = list()
+  singlescoreDunn = list()
+  singlescoreSil = list()
+  singlescoreGind = list()
+  singlescoreK = list()
   for(j in seq(1,50)){
     singlescore[[j]] <- list()
     singlescore[[j]]$dunn <- 0
     singlescore[[j]]$sil <- 0
     singlescore[[j]]$gind <- 0
     singlescore[[j]]$k <- 0
+    singlescoreDunn <- 0
+    singlescoreSil <- 0
+    singlescoreGind <- 0
+    singlescoreK <- 0 
     for(k in 1:10){
     singlescore[[j]]$dunn <- singlescore[[j]]$dunn + resultMaster[[i]]$hclust$euclidean[[k]][[j]]$dunn
     singlescore[[j]]$sil <- singlescore[[j]]$sil + resultMaster[[i]]$hclust$euclidean[[k]][[j]]$sil
     singlescore[[j]]$gind <- singlescore[[j]]$gind+ resultMaster[[i]]$hclust$euclidean[[k]][[j]]$gind
     singlescore[[j]]$k <- singlescore[[j]]$k + resultMaster[[i]]$hclust$euclidean[[k]][[j]]$k
+    singlescoreDunn[[j]] <- singlescoreDunn[[j]] + resultMaster[[i]]$hclust$euclidean[[k]][[j]]$dunn
+    singlescoreSil[[j]] <- singlescoreSil[[j]] + resultMaster[[i]]$hclust$euclidean[[k]][[j]]$sil
+    singlescoreGind[[j]] <- singlescoreGind[[j]] + resultMaster[[i]]$hclust$euclidean[[k]][[j]]$gind
+    singlescoreK[[j]] <- singlescoreK[[j]] + resultMaster[[i]]$hclust$euclidean[[k]][[j]]$k
     }
     singlescore[[j]]$dunn <- singlescore[[j]]$dunn/10
     singlescore[[j]]$sil <- singlescore[[j]]$sil/10
     singlescore[[j]]$gind <- singlescore[[j]]$gind/10
     singlescore[[j]]$k <- singlescore[[j]]$k/10
+    singlescoreDunn[[j]] <- singlescoreDunn[[j]]/10
+    singlescoreSil[[j]] <- singlescoreSil[[j]]/10 
+    singlescoreGind[[j]] <- singlescoreGind[[j]]/10
+    singlescoreK[[j]] <- singlescoreK[[j]]/10
   }
-  hscores[[i]] <- singlescore
+  hscores[[i]] <- list(singlescoreDunn, singlescoreSil, singlescoreGind, singlescoreK)
 }
 
 klist = list()
