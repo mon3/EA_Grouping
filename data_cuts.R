@@ -3,9 +3,9 @@ for(i in 6:15){
   singlek <- matrix(data = 0, nrow = 50, ncol = 3, dimnames = list(c(), c("euclidean", "manhattan", "maximum")))
   for(j in seq(1,50)){
     for(k in 1:10){
-      singlek[j,1] <- singlek[j,1] + resultMaster[[i]]$hclust$euclidean[[k]][[j]]$dunn
-      singlek[j,2] <- singlek[j,2] + resultMaster[[i]]$hclust$manhattan[[k]][[j]]$dunn
-      singlek[j,3] <- singlek[j,3] + resultMaster[[i]]$hclust$maximum[[k]][[j]]$dunn
+      singlek[j,1] <- singlek[j,1] + resultMaster[[i]]$agnes$euclidean[[k]][[j]]$dunn
+      singlek[j,2] <- singlek[j,2] + resultMaster[[i]]$agnes$manhattan[[k]][[j]]$dunn
+      singlek[j,3] <- singlek[j,3] + resultMaster[[i]]$agnes$maximum[[k]][[j]]$dunn
     }
     singlek[j,1] <- singlek[j,1]/10
     singlek[j,2] <- singlek[j,2]/10
@@ -26,9 +26,9 @@ for(i in 6:15){
   singlek <- matrix(data = 0, nrow = 50, ncol = 3, dimnames = list(c(), c("euclidean", "manhattan", "maximum")))
   for(j in seq(1,50)){
     for(k in 1:10){
-      singlek[j,1] <- singlek[j,1] + resultMaster[[i]]$hclust$euclidean[[k]][[j]]$sil
-      singlek[j,2] <- singlek[j,2] + resultMaster[[i]]$hclust$manhattan[[k]][[j]]$sil
-      singlek[j,3] <- singlek[j,3] + resultMaster[[i]]$hclust$maximum[[k]][[j]]$sil
+      singlek[j,1] <- singlek[j,1] + resultMaster[[i]]$agnes$euclidean[[k]][[j]]$sil
+      singlek[j,2] <- singlek[j,2] + resultMaster[[i]]$agnes$manhattan[[k]][[j]]$sil
+      singlek[j,3] <- singlek[j,3] + resultMaster[[i]]$agnes$maximum[[k]][[j]]$sil
     }
     singlek[j,1] <- singlek[j,1]/10
     singlek[j,2] <- singlek[j,2]/10
@@ -48,9 +48,9 @@ for(i in 6:15){
   singlek <- matrix(data = 0, nrow = 50, ncol = 3, dimnames = list(c(), c("euclidean", "manhattan", "maximum")))
   for(j in seq(1,50)){
     for(k in 1:10){
-      singlek[j,1] <- singlek[j,1] + resultMaster[[i]]$hclust$euclidean[[k]][[j]]$gind
-      singlek[j,2] <- singlek[j,2] + resultMaster[[i]]$hclust$manhattan[[k]][[j]]$gind
-      singlek[j,3] <- singlek[j,3] + resultMaster[[i]]$hclust$maximum[[k]][[j]]$gind
+      singlek[j,1] <- singlek[j,1] + resultMaster[[i]]$agnes$euclidean[[k]][[j]]$gind
+      singlek[j,2] <- singlek[j,2] + resultMaster[[i]]$agnes$manhattan[[k]][[j]]$gind
+      singlek[j,3] <- singlek[j,3] + resultMaster[[i]]$agnes$maximum[[k]][[j]]$gind
     }
     singlek[j,1] <- singlek[j,1]/10
     singlek[j,2] <- singlek[j,2]/10
@@ -70,9 +70,9 @@ for(i in 6:15){
   singlek <- matrix(data = 0, nrow = 50, ncol = 3, dimnames = list(c(), c("euclidean", "manhattan", "maximum")))
   for(j in seq(1,50)){
     for(k in 1:10){
-      singlek[j,1] <- singlek[j,1] + resultMaster[[i]]$hclust$euclidean[[k]][[j]]$k
-      singlek[j,2] <- singlek[j,2] + resultMaster[[i]]$hclust$manhattan[[k]][[j]]$k
-      singlek[j,3] <- singlek[j,3] + resultMaster[[i]]$hclust$maximum[[k]][[j]]$k
+      singlek[j,1] <- singlek[j,1] + resultMaster[[i]]$agnes$euclidean[[k]][[j]]$k
+      singlek[j,2] <- singlek[j,2] + resultMaster[[i]]$agnes$manhattan[[k]][[j]]$k
+      singlek[j,3] <- singlek[j,3] + resultMaster[[i]]$agnes$maximum[[k]][[j]]$k
     }
     singlek[j,1] <- singlek[j,1]/10
     singlek[j,2] <- singlek[j,2]/10
@@ -250,10 +250,10 @@ avgkk <- avgkk/10
 
 klist = list()
 for(i in 6:15){
-  singlek <- matrix(data = 0, nrow = 50, ncol = 3, dimnames = list(c(), c("hclust", "pam", "kmeans")))
+  singlek <- matrix(data = 0, nrow = 50, ncol = 3, dimnames = list(c(), c("agnes", "pam", "kmeans")))
   for(j in 1:50){
     for(k in 1:10){
-      singlek[j,1] <- singlek[j,1] + resultMaster[[i]]$hclust$euclidean[[k]][[j]]$k
+      singlek[j,1] <- singlek[j,1] + resultMaster[[i]]$agnes$euclidean[[k]][[j]]$k
       singlek[j,2] <- singlek[j,2] +resultMaster[[i]]$pam$euclidean[[k]][[j]]$k
       singlek[j,3] <- singlek[j,3] + resultMaster[[i]]$kmeans[[k]][[j]]$k
     }
@@ -263,3 +263,23 @@ for(i in 6:15){
   }
   klist[[i]] <- singlek
 }
+
+avgbestdunn <- matrix(data = 0, nrow = 50, ncol = 3, dimnames = list(c(), c("kmeans", "agnes euclidean", "pam maximum")))
+avgbestdunn[,1] <- avgkdunn[,1]
+avgbestdunn[,2] <- avghdunn[,1]
+avgbestdunn[,3] <- avgpdunn[,3]
+
+avgbestsil <- matrix(data = 0, nrow = 50, ncol = 3, dimnames = list(c(), c("kmeans", "agnes euclidean", "pam maximum")))
+avgbestsil[,1] <- avgksil[,1]
+avgbestsil[,2] <- avghsil[,1]
+avgbestsil[,3] <- avgpsil[,3]
+
+avgbestgin <- matrix(data = 0, nrow = 50, ncol = 3, dimnames = list(c(), c("kmeans", "agnes euclidean", "pam maximum")))
+avgbestgin[,1] <- avgkgin[,1]
+avgbestgin[,2] <- avghgin[,1]
+avgbestgin[,3] <- avgpgin[,3]
+
+avgbestk <- matrix(data = 0, nrow = 50, ncol = 3, dimnames = list(c(), c("kmeans", "agnes euclidean", "pam maximum")))
+avgbestk[,1] <- avgkk[,1]
+avgbestk[,2] <- avghk[,1]
+avgbestk[,3] <- avgpk[,3]
