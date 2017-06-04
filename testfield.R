@@ -19,7 +19,7 @@ minFunc <- 6
 maxFunc <- 15
 reruns <- 10
 kMeansFlag <- TRUE
-hclustFlag <- TRUE
+agnesFlag <- TRUE
 pamFlag <- TRUE
 
 
@@ -44,12 +44,12 @@ populationToData <- function(obj){
   return(do.call(rbind.data.frame, obj))
 }
 
-#Zwraca wynik standardowego hclusta z podzialem na k klastrow
+#Zwraca wynik standardowego agnesa z podzialem na k klastrow
 #w zakresie minimum:maximum, gdzie k jest wybierane na podstawie
 #najwyzszej wartosci sredniej silhouette dla zbioru
 #distance - macierz odleglosci grupowanych danych
 #type - metoda grupowania spo?r?d dopuszczalnych przez agnes
-getBestHClust <- function(minimum = 2, maximum, distance, type = "average"){
+getBestAgnes <- function(minimum = 2, maximum, distance, type = "average"){
   fit = agnes(distance, method = type)
   bestGrouping = as.data.frame(rep(1, popsize))
   bestWidth = -1.0
@@ -170,7 +170,7 @@ assessGroupingAlgorithm <- function(data, npops, algorithm, func, hmethod = "ave
       for(k in kMin:kMax){
         kRes = list()
         if(algorithm == "agnes"){
-          kRes$grouping = getBestHClust(k, k, pop.dist, hmethod)
+          kRes$grouping = getBestAgnes(k, k, pop.dist, hmethod)
         } else if(algorithm == "kmeans"){
           kRes$grouping = kMeansClustering(pop.dist, k, k)
         } else if(algorithm == "pam"){
@@ -184,7 +184,7 @@ assessGroupingAlgorithm <- function(data, npops, algorithm, func, hmethod = "ave
     } else{
       kRes = list()
       if(algorithm == "agnes"){
-        kRes$grouping = getBestHClust(kMin, kMax, pop.dist, hmethod)
+        kRes$grouping = getBestAgnes(kMin, kMax, pop.dist, hmethod)
       } else if(algorithm == "kmeans"){
         kRes$grouping = kMeansClustering(pop.dist, kMin, kMax)
       } else if(algorithm == "pam"){
@@ -225,17 +225,17 @@ for(funNr in 6:15){
   }
   
   if(hClustFlag){
-    hclust <- list()
-    #uruchomienie grupowania dla kazdej z metryk hclust na wycietych populacjach kazdego przebiegu
+    agnes <- list()
+    #uruchomienie grupowania dla kazdej z metryk agnes na wycietych populacjach kazdego przebiegu
     for(m in 1:length(agnesMetrics)){
-      hclustSingle <- list()
+      agnesSingle <- list()
       for(n in 1:reruns){
-        hclustSingle[[n]] <- assessGroupingAlgorithm(data_pops[[n]], npops, "hclust", partial(cec2013, i=funNr),
+        agnesSingle[[n]] <- assessGroupingAlgorithm(data_pops[[n]], npops, "agnes", partial(cec2013, i=funNr),
                                                      metric = agnesMetrics[[m]], hmethod = agnesMethod)
       }
-      hclust[[agnesMetrics[[m]]]] <- hclustSingle
+      agnes[[agnesMetrics[[m]]]] <- agnesSingle
     }
-    resultSingle$hclust <- hclust
+    resultSingle$agnes <- agnes
   }
   if(pamFlag){
     pamc <- list()
