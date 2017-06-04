@@ -53,9 +53,6 @@ library(genalg)
 library(GA)
 library(cluster)
 library(clValid)
-library(parallel)
-library(doParallel)
-library(dbscan)
 
 #Funkcja pomocnicza do tworzenia funkcji czesciowych
 partial <- function(f, ...) {

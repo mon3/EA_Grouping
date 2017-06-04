@@ -1,3 +1,12 @@
+library(cec2013)
+library(DEoptim)
+library(genalg)
+library(GA)
+library(cluster)
+library(clValid)
+library(parallel)
+library(doParallel)
+
 #Michal Kosikowski, Monika Seniut
 #Pomocniczy skrypt sluzacy do generacji danych do pierwszego etapu badan
 
