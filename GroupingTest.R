@@ -30,6 +30,23 @@ pamFlag <- TRUE
 #Flaga wlaczajaca generacje grupowania dla wszystkich k z zakresu 2-15
 allKFlag <- FALSE
 
+#Lista zagniezdzona zawierajaca komplet wynikow
+#struktura:
+#resultMaster[[x]]$nazwa_alg_grupowania$metryka[[nr_powtorzenia]][[nr_wycietej_populacji]]$wskaznik
+#x - nr funkcji cec
+#nazwa_alg_grupowania - agnes, pam lub kmeans
+#metryka - dowolna z zawartych w wektorze metryk dla PAM lub agnes,
+#ten poziom zagniezdzenia nie jest obecny w przypadku metody kmeans!
+#po $kmeans nastepuje od razu[[nr_powtorzenia]]
+#nr_powtorzenia - nr z zakresu 1:reruns, okresla nr powtorzenia optymalizacji danej funkcji
+#nr_wycietej_populacji - nr z zakresu 1:npops, okresla nr wycietej populacji
+#wskaznik - grouping - uzyskane grupowanie danej populacji
+#         - dunn - obliczony indeks Dunna danego grupowania
+#         - sil - obliczony wspolczynnik Silhouette danego grupowania
+#         - gind - obliczony odsetek grup o srednich lepszych niz najlepszy osobnik grupy
+#         - k - uzyskana liczba grup
+resultMaster <- list()
+
 library(cec2013)
 library(DEoptim)
 library(genalg)
@@ -60,6 +77,7 @@ rbgaSavePopulation <- function(obj, name){
   env[[name]] = append(env[[name]], list(obj$population))
 }
 
+#Funkcja pomocnicza przetwarzajaca liste osobnikow na data frame
 populationToData <- function(obj){
   return(do.call(rbind.data.frame, obj))
 }
@@ -154,7 +172,7 @@ pamClustering <- function(distance, minimum=2, maximum){
   return(bestGrouping)
 }
 
-# dla populacji popsize osobnikow, wybieramy co 1/popNr iteracji alg. ewolucyjnego
+# dla populacji popsize osobnikow, wybiera co 1/popNr iteracji alg. ewolucyjnego
 populationToClusterAnalysis <- function(data, popNr){
   popToClust = matrix(0, nrow = popNr*popsize, ncol = 10)
   popToClust <- data.frame(popToClust)
@@ -245,23 +263,7 @@ for(funNr in minFunc:maxFunc){
   populations[[funNr]] <- funcpop
 }
 
-#Lista zagniezdzona zawierajaca komplet wynikow
-#struktura:
-#resultMaster[[x]]$nazwa_alg_grupowania$metryka[[nr_powtorzenia]][[nr_wycietej_populacji]]$wskaznik
-#x - nr funkcji cec
-#nazwa_alg_grupowania - agnes, pam lub kmeans
-#metryka - dowolna z zawartych w wektorze metryk dla PAM lub agnes,
-#ten poziom zagniezdzenia nie jest obecny w przypadku metody kmeans!
-#po $kmeans nastepuje od razu[[nr_powtorzenia]]
-#nr_powtorzenia - nr z zakresu 1:reruns, okresla nr powtorzenia optymalizacji danej funkcji
-#nr_wycietej_populacji - nr z zakresu 1:npops, okresla nr wycietej populacji
-#wskaznik - grouping - uzyskane grupowanie danej populacji
-#         - dunn - obliczony indeks Dunna danego grupowania
-#         - sil - obliczony wspolczynnik Silhouette danego grupowania
-#         - gind - obliczony odsetek grup o srednich lepszych niz najlepszy osobnik grupy
-#         - k - uzyskana liczba grup
-resultMaster <- list()
-for(funNr in 6:15){
+for(funNr in minFunc:maxFunc){
   resultSingle <- list()
 
   data_pops <- list()
@@ -270,7 +272,7 @@ for(funNr in 6:15){
     data_pops[[n]] <- populationToClusterAnalysis(populationToData(populations[[funNr]][[n]]), npops)
   }
   
-  if(hClustFlag){
+  if(agnesFlag){
     agnes <- list()
     #uruchomienie grupowania dla kazdej z metryk agnes na wycietych populacjach kazdego przebiegu
     for(m in 1:length(agnesMetrics)){
