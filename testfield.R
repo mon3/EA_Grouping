@@ -141,7 +141,7 @@ assessGroupingAlgorithm <- function(data, npops, algorithm, func, hmethod = "ave
     start <- i*step+1
     end <- i*step+100
     pop.current <- data[c(start:end),]
-    if(algorithm == "hclust" && !is.null(metric)){
+    if(algorithm != "kmeans" && !is.null(metric)){
       if(metric == "squared"){
         pop.dist <- dist(pop.current, method = "euclidean")
         pop.dist <- pop.dist^2
