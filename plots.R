@@ -5,10 +5,10 @@ plotMetrics<-function(data, numplots, mainlabel, ylabel, maxy){
   if(numplots==3){
     points(x, data[1:50,2], col="red")
     points(x, data[1:50,3], col="blue")
-    legend("bottomleft", legend=c("euclidean", "manhattan", "maximum"), col=c("green", "red", "blue"),lty=1, cex=1.0)
+    legend("topleft", legend=c("euclidean", "manhattan", "maximum"), col=c("green", "red", "blue"),lty=1, cex=1.0)
   }
   else{
-    legend("bottomleft", legend=c("euclidean"), col=c("green"),lty=1, cex=1.0)
+    legend("topleft", legend=c("euclidean"), col=c("green"),lty=1, cex=1.0)
   }
 }
 

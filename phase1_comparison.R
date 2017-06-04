@@ -25,9 +25,8 @@ compResults = list()
 for(funNr in 6:8){
   compSingle <- list()
   for(alg in c("RBGA", "GA", "DE")){
-    for(method in c("hclust"))
+    for(method in c("kmeans"))
     {
-      browser()
       avgSil <- rep(0,10)
       avgDun <- rep(0,10)
       avgGin <- rep(0,10)
