@@ -1,3 +1,7 @@
+#Michal Kosikowski, Monika Seniut
+#Pomocniczy skrypt generujacy wykresy na podstawie danych zebranych przez data_cuts
+
+#Legende wewnatrz funkcji dla danych avgbest trzeba zmienic na inna niz dla danych avg(h/k/p)!
 plotMetrics<-function(data, numplots, mainlabel, ylabel, maxy){
   x <- seq(1,50,1)
   plot(x, data[1:50,1], col="green", main=mainlabel,

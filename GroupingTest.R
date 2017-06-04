@@ -1,4 +1,35 @@
-library(cec2005benchmark)
+#Michal Kosikowski, Monika Seniut
+#Skrypt do testowania jakosci grupowania populacji tworzonych przez algorytmy ewolucyjne
+
+#Wyniki zebrane w ramach uruchomienia trafiaja do listy zagniezdzonej resultMaster!
+
+#Liczba populacji wycietych rownomiernie sposrod wszystkich wygenerowanych
+npops <- 50
+#Rozmiar populacji
+popsize <- 100
+#Liczba iteracji algorytmu RBGA
+iterations <- 1000
+#Rozpatrywane metryki dla funkcji agnes
+agnesMetrics <- list("euclidean", "maximum", "manhattan")
+#Rozpatrywane metryki dla funkcji pam
+pamMetrics <- list("euclidean", "maximum", "manhattan")
+#Parametr method przekazywany do funkcji agnes - okresla metode klastrowania
+agnesMethod <- "average"
+#Nr pierwszej optymalizowanej funkcji z pakietu cec2013
+minFunc <- 6
+#Nr ostatniej optymalizowanej funkcji z pakietu cec2013
+maxFunc <- 15
+#Liczba powtorzen optymalizacji dla kazdej z funkcji
+reruns <- 10
+#Flaga wlaczajaca grupowanie metoda kmeans
+kMeansFlag <- TRUE
+#Flaga wlaczajaca grupowanie metoda agnes
+agnesFlag <- TRUE
+#Flaga wlaczajaca grupowanie metoda pam
+pamFlag <- TRUE
+#Flaga wlaczajaca generacje grupowania dla wszystkich k z zakresu 2-15
+allKFlag <- FALSE
+
 library(cec2013)
 library(DEoptim)
 library(genalg)
@@ -9,20 +40,7 @@ library(parallel)
 library(doParallel)
 library(dbscan)
 
-npops <- 50
-popsize <- 100
-iterations <- 1000
-agnesMetrics <- list("euclidean", "maximum", "manhattan")
-pamMetrics <- list("euclidean", "maximum", "manhattan")
-agnesMethod <- "average"
-minFunc <- 6
-maxFunc <- 15
-reruns <- 10
-kMeansFlag <- TRUE
-agnesFlag <- TRUE
-pamFlag <- TRUE
-
-
+#Funkcja pomocnicza do tworzenia funkcji czesciowych
 partial <- function(f, ...) {
   l <- list(...)
   function(...) {
@@ -30,11 +48,13 @@ partial <- function(f, ...) {
   }
 }
 
+#Funkcja pomocnicza do zapisywania populacji stworzonych przez algorytm GA
 gaSavePopulation <- function(obj, name){
   env = globalenv()
   env[[name]] = append(env[[name]], list(obj@population))
 }
 
+#Funkcja pomocnicza do zapisywania populacji stworzonych przez algorytm RBGA
 rbgaSavePopulation <- function(obj, name){
   env = globalenv()
   env[[name]] = append(env[[name]], list(obj$population))
@@ -48,7 +68,7 @@ populationToData <- function(obj){
 #w zakresie minimum:maximum, gdzie k jest wybierane na podstawie
 #najwyzszej wartosci sredniej silhouette dla zbioru
 #distance - macierz odleglosci grupowanych danych
-#type - metoda grupowania spo?r?d dopuszczalnych przez agnes
+#type - metoda grupowania sporod dopuszczalnych przez agnes
 getBestAgnes <- function(minimum = 2, maximum, distance, type = "average"){
   fit = agnes(distance, method = type)
   bestGrouping = as.data.frame(rep(1, popsize))
@@ -71,6 +91,9 @@ getBestAgnes <- function(minimum = 2, maximum, distance, type = "average"){
 
 #Zwraca odsetek grup, dla ktorych wartosc funkcji dla sredniej jest lepsza (nizsza)
 #niz minimalna wartosc funkcji dla elementow grupy
+#dataset - zbior danych jako data frame
+#grouping - grupowanie danych jako wektor
+#fun - funkcja optymalizowana
 groupIndex <- function(dataset, grouping, fun){
   subsets = c(c(0))
   groupsNr = max(grouping)
@@ -86,8 +109,10 @@ groupIndex <- function(dataset, grouping, fun){
 }
 
 # tylko dla metryki Euklidesowej!
-# wyznaczenie optymalnej liczby klastrow dla grupowania k-srednich
+# wyznaczenie grupowania o najlepszej liczbie dla algorytmu k-srednich
 # na podstawie wspolczynnika Silhouette
+# k wyznaczane miedzy minimum, a maximum
+# distance - macierz odleglosci danych
 kMeansClustering <- function(distance, minimum=2, maximum){
   bestGrouping = as.data.frame(rep(1, popsize))
   bestWidth = -1.0
@@ -108,6 +133,10 @@ kMeansClustering <- function(distance, minimum=2, maximum){
   return(bestGrouping)
 }
 
+# wyznaczenie grupowania o najlepszej liczbie klastrow dla algorytmu PAM
+# na podstawie wspolczynnika Silhouette
+# k wyznaczane miedzy minimum, a maximum
+# distance - macierz odleglosci danych
 pamClustering <- function(distance, minimum=2, maximum){
   bestGrouping = as.data.frame(rep(1, popsize))
   bestWidth = -1.0
@@ -145,6 +174,7 @@ populationToClusterAnalysis <- function(data, popNr){
   return(popToClust)
 }
 
+# glowna funkcja zwracajaca wyniki grupowan na danych w zaleznosci od parametrow ustawionych na poczatku pliku
 assessGroupingAlgorithm <- function(data, npops, algorithm, func, hmethod = "average", metric = "euclidean", kMin = 2, kMax = 15, tryAllK = FALSE){
   groupingResults = list()
   step = nrow(data)/npops
@@ -201,6 +231,7 @@ assessGroupingAlgorithm <- function(data, npops, algorithm, func, hmethod = "ave
   return(groupingResults)
 }
 
+#generacja listy populacji zgodnie z parametrami poczatkowymi skryptu
 populations <- list()
 for(funNr in minFunc:maxFunc){
   funcpop <- list()
@@ -214,6 +245,21 @@ for(funNr in minFunc:maxFunc){
   populations[[funNr]] <- funcpop
 }
 
+#Lista zagniezdzona zawierajaca komplet wynikow
+#struktura:
+#resultMaster[[x]]$nazwa_alg_grupowania$metryka[[nr_powtorzenia]][[nr_wycietej_populacji]]$wskaznik
+#x - nr funkcji cec
+#nazwa_alg_grupowania - agnes, pam lub kmeans
+#metryka - dowolna z zawartych w wektorze metryk dla PAM lub agnes,
+#ten poziom zagniezdzenia nie jest obecny w przypadku metody kmeans!
+#po $kmeans nastepuje od razu[[nr_powtorzenia]]
+#nr_powtorzenia - nr z zakresu 1:reruns, okresla nr powtorzenia optymalizacji danej funkcji
+#nr_wycietej_populacji - nr z zakresu 1:npops, okresla nr wycietej populacji
+#wskaznik - grouping - uzyskane grupowanie danej populacji
+#         - dunn - obliczony indeks Dunna danego grupowania
+#         - sil - obliczony wspolczynnik Silhouette danego grupowania
+#         - gind - obliczony odsetek grup o srednich lepszych niz najlepszy osobnik grupy
+#         - k - uzyskana liczba grup
 resultMaster <- list()
 for(funNr in 6:15){
   resultSingle <- list()
@@ -231,7 +277,8 @@ for(funNr in 6:15){
       agnesSingle <- list()
       for(n in 1:reruns){
         agnesSingle[[n]] <- assessGroupingAlgorithm(data_pops[[n]], npops, "agnes", partial(cec2013, i=funNr),
-                                                     metric = agnesMetrics[[m]], hmethod = agnesMethod)
+                                                     metric = agnesMetrics[[m]], hmethod = agnesMethod,
+                                                    tryAllK = allKFlag)
       }
       agnes[[agnesMetrics[[m]]]] <- agnesSingle
     }

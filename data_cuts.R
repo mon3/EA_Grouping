@@ -1,3 +1,7 @@
+#Michal Kosikowski, Monika Seniut
+#Pomocniczy skrypt generujacy listy macierzy i macierze
+#z usrednionymi danymi dot. poszczegolnych metod grupowania i metryk
+
 hdunnscores = list()
 for(i in 6:15){
   singlek <- matrix(data = 0, nrow = 50, ncol = 3, dimnames = list(c(), c("euclidean", "manhattan", "maximum")))

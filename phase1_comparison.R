@@ -1,3 +1,6 @@
+#Michal Kosikowski, Monika Seniut
+#Pomocniczy skrypt sluzacy do generacji danych do pierwszego etapu badan
+
 p1pops <- list()
 for(funNr in 6:8){
   p1pops[[funNr]] <- list()
